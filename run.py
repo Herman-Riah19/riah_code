@@ -8,8 +8,8 @@ from apps.modules.shared.config import Settings, settings
 
 # Import all modules to register blueprints
 from apps.modules.corpus import corpusBlueprint
-from apps.modules.tokenizer import tokenizerBlueprint
-from apps.modules.model import trainingBlueprint, inferenceBlueprint
+#from apps.modules.tokenizer import tokenizerBlueprint
+#from apps.modules.model import trainingBlueprint, inferenceBlueprint
 from apps.modules.shared.kernel.exceptions import RiahAppError
 
 def createApp(config: Settings | None = None) -> Flask:
@@ -33,9 +33,9 @@ def createApp(config: Settings | None = None) -> Flask:
     
     # Register blueprints
     app.register_blueprint(corpusBlueprint)
-    app.register_blueprint(tokenizerBlueprint)
-    app.register_blueprint(trainingBlueprint)
-    app.register_blueprint(inferenceBlueprint)
+    #app.register_blueprint(tokenizerBlueprint)
+    #app.register_blueprint(trainingBlueprint)
+    #app.register_blueprint(inferenceBlueprint)
     
     # Health check endpoint
     @app.route("/health")

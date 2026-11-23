@@ -16,6 +16,7 @@ export interface NavbarAction {
   label: string
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
   href?: string
+  onClick?: () => void
 }
 
 export interface NavbarProps {
@@ -93,7 +94,12 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         <Flex align="center" gap="sm">
           {actions.map((action) => (
-            <Button key={action.label} variant={action.variant ?? 'outline'} size="sm">
+            <Button
+              key={action.label}
+              variant={action.variant ?? 'outline'}
+              size="sm"
+              onClick={action.onClick}
+            >
               {action.label}
             </Button>
           ))}

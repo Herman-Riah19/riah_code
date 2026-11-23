@@ -16,10 +16,13 @@ class FileStorage:
         self._baseDir.mkdir(parents=True, exist_ok=True)
     
     @contextmanager
-    def writeJsonl(self, filePath: Path, compress: bool = True):
+    def writeJsonl(self, filePath: Path, compress: bool = True, append: bool = False):
         """Context manager for writing JSONL (optionally gzipped)"""
         filePath.parent.mkdir(parents=True, exist_ok=True)
-        mode = "wt"
+        if append:
+            mode = "at" if compress else "a"
+        else:
+            mode = "wt" if compress else "w"
         opener = gzip.open if compress else open
         with opener(filePath, mode, encoding="utf-8") as f:
             def writeLine(obj: dict):

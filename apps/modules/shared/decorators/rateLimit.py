@@ -3,7 +3,8 @@
 import time
 from functools import wraps
 from collections import defaultdict
-from flask import request, jsonify
+from typing import Callable
+from flask import request
 from apps.modules.shared.kernel.exceptions import RiahAppError
 from apps.modules.shared.config import settings
 
@@ -48,7 +49,7 @@ _rateLimiter = RateLimiter()
 def rateLimited(
     maxRequests: int | None = None,
     windowSeconds: int | None = None,
-    keyFunc: callable | None = None,
+    keyFunc: Callable[[], str] | None = None,
 ):
     """Decorator for rate limiting endpoints"""
     maxReq = maxRequests or settings.rateLimitRequests
@@ -73,9 +74,9 @@ def rateLimited(
             
             # Handle both direct return and tuple (response, status)
             if isinstance(response, tuple):
-                resp, status = response[0], response[1]
+                resp = response[0]
             else:
-                resp, status = response, 200
+                resp = response
             
             if hasattr(resp, "headers"):
                 resp.headers["X-RateLimit-Limit"] = str(info["limit"])

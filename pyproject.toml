@@ -92,7 +92,7 @@ target-version = "py311"
 line-length = 100
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "DTZ", "T10", "ICN", "PIE", "PT", "Q", "RSE", "SIM", "TID", "TRY", "ARG", "PTH", "ERA", "PD", "PL", "TRY"]
 ignore = ["E501", "ARG001", "ARG002"]
-per-file-ignores = {"tests/*": ["S101", "S106", "PT011", "PT012", "PT013", "PT014", "PT015"]}
+per-file-ignores = { "tests/*" = ["S101", "S106", "PT011", "PT012", "PT013", "PT014", "PT015"] }
 
 [tool.ruff.format]
 quote-style = "double"
@@ -114,6 +114,7 @@ namespace-packages = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"

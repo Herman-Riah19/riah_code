@@ -56,6 +56,41 @@ DEFAULT_BATCH_SIZE = 32
 
 ---
 
+## 1.5 Règle d'or : Aucun import ou fonction inutilisé
+
+Il est **formellement interdit** d'importer ou de déclarer des fonctions, variables, classes ou modules qui ne sont pas utilisés.
+
+| Élément | Règle | Exemple |
+|---------|-------|---------|
+| Imports | Chaque import doit être utilisé dans le fichier | `from pathlib import Path` → `Path` doit apparaître dans le code |
+| Fonctions | Chaque fonction déclarée doit être appelée quelque part | `def helper():` doit avoir au moins un appel `helper()` |
+| Variables | Chaque variable assignée doit être lue | `x = 1` → `x` doit être utilisé |
+| Classes | Chaque classe déclarée doit être instanciée ou utilisée | `class Helper:` doit avoir `Helper()` quelque part |
+| Modules | Chaque module importé doit avoir au moins un symbole utilisé | `import os` → `os.path` ou `os.environ` doit être utilisé |
+
+### Anti-patterns formellement interdits
+
+```python
+# INTERDIT : import non utilisé
+import os
+import json
+from typing import Optional  # NON - Optional non utilisé
+
+# INTERDIT : fonction déclarée mais jamais appelée
+def calculerTotal(items):
+    return sum(items)  # NON - jamais appelée
+
+# INTERDIT : variable assignée mais jamais lue
+result = calculerTotal(data)  # NON - result jamais lu
+print(data)  # result non utilisé
+```
+
+### Règle de détection
+
+Tous les fichiers doivent passer `ruff check --select F` avec **0 erreur**. Toute erreur `F401` (import unused) ou `F841` (local variable assigned but never used) doit être corrigée avant tout commit.
+
+---
+
 ## 2. Typage Strict & Type Hints
 
 Toute signature de fonction, méthode ou constructeur doit comporter des annotations de types complètes (`typing` / built-in types Python 3.10+).
