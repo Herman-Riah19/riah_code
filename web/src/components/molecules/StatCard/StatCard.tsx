@@ -7,7 +7,6 @@ import { Badge } from '@/components/atoms/Badge'
 export interface StatCardProps {
   title: string
   value: string | number
-  subtitle?: string
   trend?: {
     value: string
     isPositive: boolean
@@ -22,7 +21,6 @@ export interface StatCardProps {
 export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
-  subtitle,
   trend,
   badge,
   className,
@@ -47,7 +45,6 @@ export const StatCard: React.FC<StatCardProps> = ({
             {title}
           </Text>
         </Box>
-        {subtitle && <Text size="sm" color="muted">{subtitle}</Text>}
       </Box>
       <Heading level={3} size="2xl" weight="bold" color="default">
         {value}

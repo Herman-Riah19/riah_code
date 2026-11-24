@@ -1,4 +1,6 @@
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+import type { MonitorableJob } from './job'
+
+export type { JobStatus } from './job'
 
 export interface CorpusDataset {
   source: string
@@ -26,17 +28,8 @@ export interface PipelineProgress {
   totalTokens?: number
 }
 
-export interface CorpusJob {
-  id: string
-  jobType: string
-  status: JobStatus
-  config: Record<string, unknown>
-  userId: string | null
-  createdAt: string
-  startedAt: string | null
-  finishedAt: string | null
+export interface CorpusJob extends MonitorableJob {
   progress: PipelineProgress
-  error: string | null
 }
 
 export interface StartPipelinePayload {

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { JobMonitor } from './JobMonitor'
-import type { CorpusJob } from '@/types/corpus'
+import type { JobConfigField, MonitorableJob } from '@/types/job'
 
 const meta: Meta<typeof JobMonitor> = {
   title: 'Organisms/JobMonitor',
@@ -11,12 +11,29 @@ const meta: Meta<typeof JobMonitor> = {
     onResume: { action: 'resumeClicked' },
     onDismiss: { action: 'dismissClicked' },
   },
+  args: {
+    title: 'Job de scraping',
+    progressLabels: {
+      documentsScraped: 'Documents scrapes',
+      documentsCleaned: 'Documents nettoyes',
+      documentsFiltered: 'Documents filtres',
+      documentsDeduplicated: 'Documents dedupliques',
+      documentsExported: 'Documents exportes (MD)',
+      shardsWritten: 'Shards ecrits',
+      totalTokens: 'Total tokens',
+    },
+    configFields: [
+      { key: 'sources', label: 'Sources', icon: 'database-icon' },
+      { key: 'languages', label: 'Langues', icon: 'globe-icon' },
+      { key: 'maxArticlesPerLang', label: 'Max/doc', icon: 'file-text-icon' },
+    ],
+  },
 }
 
 export default meta
 type Story = StoryObj<typeof JobMonitor>
 
-const baseJob: CorpusJob = {
+const baseJob: MonitorableJob = {
   id: 'abc123-def456-ghi789',
   jobType: 'data_pipeline',
   status: 'running',
@@ -117,5 +134,46 @@ export const WithConfigOnly: Story = {
         outputDir: 'data/corpus',
       },
     },
+  },
+}
+
+const tokenizerConfigFields: JobConfigField[] = [
+  { key: 'languages', label: 'Langues', icon: 'globe-icon' },
+  { key: 'vocabSize', label: 'Taille du vocabulaire' },
+  { key: 'minFrequency', label: 'Frequence minimale' },
+  { key: 'corpusSampleSize', label: 'Echantillon corpus' },
+]
+
+export const TokenizerTraining: Story = {
+  args: {
+    title: "Job d'entrainement du tokenizer",
+    progressLabels: {
+      vocabSize: 'Taille du vocabulaire',
+      compressionRatio: 'Compression (chars/token)',
+      oovRate: 'Taux OOV',
+    },
+    configFields: tokenizerConfigFields,
+    job: {
+      id: 'tok-42f1-9c3d',
+      jobType: 'tokenizer_training',
+      status: 'completed',
+      config: {
+        languages: ['fr', 'en'],
+        vocabSize: 32000,
+        minFrequency: 2,
+        corpusSampleSize: 20000,
+      },
+      userId: 'user-1',
+      createdAt: new Date(Date.now() - 120000).toISOString(),
+      startedAt: new Date(Date.now() - 115000).toISOString(),
+      finishedAt: new Date().toISOString(),
+      progress: {
+        vocabSize: 32000,
+        compressionRatio: 3.56,
+        oovRate: 0,
+      },
+      error: null,
+    },
+    onDismiss: () => alert('Dismissed!'),
   },
 }

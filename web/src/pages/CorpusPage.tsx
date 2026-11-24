@@ -11,6 +11,23 @@ import { formatNumber, formatBytes } from '@/utils/format'
 import { Icon } from '@/components/atoms/Icon'
 import { Box } from '@/components/atoms/Box'
 import { Button } from '@/components/atoms/Button'
+import type { JobConfigField } from '@/types/job'
+
+const CORPUS_PROGRESS_LABELS: Record<string, string> = {
+  documentsScraped: 'Documents scrapes',
+  documentsCleaned: 'Documents nettoyes',
+  documentsFiltered: 'Documents filtres',
+  documentsDeduplicated: 'Documents dedupliques',
+  documentsExported: 'Documents exportes (MD)',
+  shardsWritten: 'Shards ecrits',
+  totalTokens: 'Total tokens',
+}
+
+const CORPUS_CONFIG_FIELDS: JobConfigField[] = [
+  { key: 'sources', label: 'Sources', icon: 'database-icon' },
+  { key: 'languages', label: 'Langues', icon: 'globe-icon' },
+  { key: 'maxArticlesPerLang', label: 'Max/doc', icon: 'file-text-icon' },
+]
 
 export function CorpusPage() {
   const {
@@ -82,9 +99,8 @@ export function CorpusPage() {
       {/* KPI Overview - decision cues at top-left */}
       <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
-          title="Corpus totaux"
+          title={datasets.length > 0 ? 'source(s) active(s)' : 'Aucune donnee'}
           value={datasets.length.toString()}
-          subtitle={datasets.length > 0 ? 'source(s) active(s)' : 'Aucune donnee'}
           badge={{
             variant: datasets.length > 0 ? 'success' : 'muted',
             label: datasets.length > 0 ? 'Actif' : 'Vide',
@@ -95,24 +111,21 @@ export function CorpusPage() {
           }}
         />
         <StatCard
-          title="Taille totale"
+          title="Stockes sous data/corpus/markdown/"
           value={formatBytes(totalSize)}
-          subtitle="Stockes sous data/corpus/markdown/"
           badge={{ variant: 'default', label: 'Fichiers .md' }}
         />
         <StatCard
-          title="Sources"
+          title="Sources de scraping"
           value={sources.length.toString()}
-          subtitle="Disponibles pour le scraping"
           badge={{
             variant: sources.length > 0 ? 'accent' : 'muted',
             label: sources.length > 0 ? 'Configures' : 'Aucune',
           }}
         />
         <StatCard
-          title="Travaux"
+          title={`Travaux ${job ? `Statut: ${job.status}` : 'Aucun travail'}`}
           value={job ? '1' : '0'}
-          subtitle={job ? `Statut: ${job.status}` : 'Aucun travail'}
           badge={{
             variant: activeJob ? 'accent' : job?.status === 'failed' ? 'error' : 'success',
             label: activeJob
@@ -128,6 +141,9 @@ export function CorpusPage() {
       {job && (
         <JobMonitor
           job={job}
+          title="Job de scraping"
+          progressLabels={CORPUS_PROGRESS_LABELS}
+          configFields={CORPUS_CONFIG_FIELDS}
           onResume={job.status === 'failed' ? handleResumeScrape : undefined}
           onDismiss={() => {}}
           className="mb-8"

@@ -1,7 +1,6 @@
 # tests/unit/test_corpus/test_pipelines.py
 """TDD Tests pour le module corpus - Pipelines - écrits AVANT l'implémentation"""
 
-from pathlib import Path
 from apps.modules.corpus.pipelines.baseScraper import BaseScraper, ScrapeResult
 
 

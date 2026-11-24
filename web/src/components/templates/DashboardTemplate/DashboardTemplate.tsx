@@ -31,6 +31,7 @@ export const DashboardTemplate: React.FC<DashboardTemplateProps> = ({
 
   const items: SidebarItem[] = sidebarItems ?? [
     { id: 'corpus', label: 'Corpus', icon: 'database-icon', href: '/corpus' },
+    { id: 'tokenizer', label: 'Tokenizer', icon: 'hash-icon', href: '/tokenizer' },
     { id: 'training', label: 'Entrainement', icon: 'play-icon', href: '/training' },
     { id: 'inference', label: 'Inference', icon: 'github-icon', href: '/inference' },
     { id: 'dashboard', label: 'Tableau de bord', icon: 'dashboard-icon', href: '/' },

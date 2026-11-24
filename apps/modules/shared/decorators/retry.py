@@ -66,7 +66,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._onSuccess()
             return result
-        except self.expectedException as e:
+        except self.expectedException:
             self._onFailure()
             raise
     

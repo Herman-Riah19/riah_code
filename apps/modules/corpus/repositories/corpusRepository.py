@@ -239,6 +239,11 @@ class CorpusRepository:
         markdownDir.mkdir(parents=True, exist_ok=True)
         return markdownDir
 
+    def getShardDir(self) -> Path:
+        """Return (and create) the directory holding encoded token shards."""
+        self._shardDir.mkdir(parents=True, exist_ok=True)
+        return self._shardDir
+
     def listMarkdownCorpora(
         self, extraDirs: list[Path] | None = None
     ) -> list[CorpusDatasetSummary]:

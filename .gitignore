@@ -2,6 +2,9 @@
 
 data/corpus
 data/bible
+data/tokenizer
+data/checkpoints
+data/chat
 debug-storybook.log
 .pytest_cache
 .ruff_cache

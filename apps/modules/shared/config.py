@@ -1,7 +1,6 @@
 # apps/modules/shared/config.py
 """Global configuration using Pydantic Settings"""
 from pathlib import Path
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

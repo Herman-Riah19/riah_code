@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CorpusPage } from '@/pages/CorpusPage'
+import { TokenizerPage } from '@/pages/TokenizerPage'
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate'
 import { Box } from '@/components/atoms/Box'
 import { Text } from '@/components/atoms/Text'
@@ -41,6 +42,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeContent />} />
           <Route path="/corpus" element={<CorpusPage />} />
+          <Route path="/tokenizer" element={<TokenizerPage />} />
           <Route path="/training" element={<TrainingContent />} />
           <Route path="/inference" element={<InferenceContent />} />
         </Routes>
