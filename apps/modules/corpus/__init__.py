@@ -20,8 +20,10 @@ from .models.corpusModel import (
     WikiScraperConfig,
 )
 from .pipelines.baseScraper import BaseScraper
+from .pipelines.bibleScraper import BibleScraper
 from .pipelines.markdownExporter import MarkdownExporter
 from .pipelines.pipelineOrchestrator import PipelineOrchestrator
+from .pipelines.valtortaScraper import ValtortaScraper
 from .repositories.corpusRepository import CorpusRepository
 from .services.corpusService import CorpusService
 from .controllers.corpusController import CorpusContainer, corpusBlueprint
@@ -44,6 +46,8 @@ __all__ = [
     "TextNormalizerConfig",
     "WikiScraperConfig",
     "BaseScraper",
+    "BibleScraper",
+    "ValtortaScraper",
     "MarkdownExporter",
     "PipelineOrchestrator",
     "CorpusRepository",

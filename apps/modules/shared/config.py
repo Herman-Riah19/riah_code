@@ -37,6 +37,7 @@ class Settings(BaseSettings):
 
     # Corpus
     corpusDir: Path = Path("./data/corpus")
+    bibleDir: Path = Path("./data/bible")
     tokenizerDir: Path = Path("./data/tokenizer")
 
     # Chat

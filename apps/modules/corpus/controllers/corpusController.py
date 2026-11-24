@@ -29,15 +29,17 @@ from ..pipelines.pipelineOrchestrator import PipelineOrchestrator
 from ..pipelines.qualityFilter import QualityFilter
 from ..pipelines.shardWriter import ShardWriter
 from ..pipelines.textNormalizer import TextNormalizer
+from ..pipelines.valtortaScraper import ValtortaScraper
 from ..pipelines.wikiScraper import WikiScraper
 from ..repositories.corpusRepository import CorpusRepository
 from ..services.corpusService import CorpusService
 
 DEFAULT_WORKER_COUNT = 4
 WIKIPEDIA_SOURCE = "wikipedia"
-BIBLE_SOURCE = "bible_gateway"
+BIBLE_SOURCE = "bible"
+VALTORTA_SOURCE = "valtorta"
 WIKIPEDIA_LANGUAGES = ("fr", "en", "es", "de")
-BIBLE_TRANSLATIONS = {"fr": ["lsg"], "en": ["kjv"]}
+BIBLE_TRANSLATIONS = {"fr": "crampon", "en": "kjv"}
 
 SCRAPE_SOURCES = (
     ScrapeSourceDescription(
@@ -48,9 +50,15 @@ SCRAPE_SOURCES = (
     ),
     ScrapeSourceDescription(
         id=BIBLE_SOURCE,
-        label="Bible",
-        description="Chapitres bibliques via l'API publique bible-api.com.",
+        label="Bible (Crampon 1923 / King James)",
+        description="Bible domaine public, un chapitre par document.",
         languages=list(BIBLE_TRANSLATIONS),
+    ),
+    ScrapeSourceDescription(
+        id=VALTORTA_SOURCE,
+        label="Maria Valtorta",
+        description="Revelations de Maria Valtorta depuis maria-valtorta.org.",
+        languages=["fr"],
     ),
 )
 
@@ -98,12 +106,22 @@ class CorpusContainer:
             scrapers.append(
                 BibleScraper(
                     BibleScraperConfig(
-                        languages=languages or ["en"],
+                        languages=languages or ["fr"],
                         translationsPerLang={
                             language: BIBLE_TRANSLATIONS[language]
                             for language in BIBLE_TRANSLATIONS
                         },
-                        versePerDocument=False,
+                        minArticleLength=100,
+                    )
+                )
+            )
+        if VALTORTA_SOURCE in config.sources:
+            scrapers.append(
+                ValtortaScraper(
+                    BibleScraperConfig(
+                        source=VALTORTA_SOURCE,
+                        languages=["fr"],
+                        minArticleLength=100,
                     )
                 )
             )
@@ -124,6 +142,10 @@ class CorpusContainer:
             checkpointDir=settings.corpusDir / "checkpoints",
             markdownExporter=MarkdownExporter(),
             markdownDir=corpusRepo.getMarkdownDir(),
+            markdownDirs={
+                BIBLE_SOURCE: settings.bibleDir,
+                VALTORTA_SOURCE: settings.bibleDir,
+            },
         )
 
     @classmethod
@@ -184,7 +206,9 @@ def getCorpusStats(user: Any) -> Any:
 @requireAuth
 def listCorpusDatasets(user: Any) -> Any:
     """List exported `.md` corpora grouped by source."""
-    datasets = CorpusContainer.getCorpusRepository().listMarkdownCorpora()
+    datasets = CorpusContainer.getCorpusRepository().listMarkdownCorpora(
+        [settings.bibleDir]
+    )
     return jsonify({"datasets": [dataset.toDict() for dataset in datasets]})
 
 

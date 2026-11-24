@@ -51,15 +51,27 @@ export function useCorpusDashboard(): CorpusDashboardState {
         const kept = current.filter((sourceId) => available.includes(sourceId))
         return kept.length > 0 ? kept : available.slice(0, 1)
       })
+      const allLanguages = [
+        ...new Set(nextSources.flatMap((source) => source.languages)),
+      ]
+      if (
+        allLanguages.length > 0 &&
+        !allLanguages.includes(language)
+      ) {
+        setLanguage(allLanguages[0])
+      }
     } catch (cause) {
       setError(toMessage(cause))
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [language])
 
   useEffect(() => {
-    void loadAll()
+    const timer = window.setTimeout(() => {
+      void loadAll()
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [loadAll])
 
   const availableLanguages = useMemo(() => {
@@ -75,13 +87,6 @@ export function useCorpusDashboard(): CorpusDashboardState {
     }
     return languages
   }, [sources, selectedSources])
-
-  useEffect(() => {
-    if (availableLanguages.length === 0) return
-    if (!availableLanguages.includes(language)) {
-      setLanguage(availableLanguages[0])
-    }
-  }, [availableLanguages, language])
 
   useEffect(() => {
     if (!job || !isActiveJob(job)) return

@@ -55,29 +55,26 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
         className,
       ].filter(Boolean).join(' ')}
     >
-      <Stack spacing="lg">
+      <Stack spacing="md">
         <Stack spacing="sm">
-          <Flex align="center" justify="between">
-            <Heading level={3} size="md" weight="semibold" color="default">
-              Configuration du scraping
-            </Heading>
-            <Text size="xs" color="muted">
-              {selectedSources.length} source(s) selectionnee(s)
-            </Text>
-          </Flex>
-
+          <Heading level={2} size="lg" weight="semibold" color="default">
+            Lancer un nouveau scraping
+          </Heading>
           <Text size="sm" color="muted">
-            Choisissez les sources et la langue pour demarrer la collecte de donnees.
+            Collectez des donnees depuis vos sources pour alimenter vos corpus d entrainement.
           </Text>
         </Stack>
 
-        <Divider />
+        <Divider className="mb-2" />
 
-        <Stack spacing="lg" className="pt-2">
+        <Stack spacing="md" className="pt-2">
           <Stack spacing="sm">
             <Flex align="center" justify="between">
-              <Text size="sm" weight="medium" color="default">
+              <Text size="sm" weight="semibold" color="default">
                 Sources de donnees
+              </Text>
+              <Text size="xs" color="muted">
+                {selectedSources.length} selectionnee(s)
               </Text>
             </Flex>
             <ToggleGroup
@@ -87,14 +84,14 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
               multiple
               isDisabled={isDisabled}
             />
-            <Flex wrap gap="xs" className="text-xs text-muted-foreground">
+            <Flex wrap gap="xs" className="text-xs text-muted-foreground mt-2">
               {selectedSources.map((sourceId) => {
                 const source = sources.find((s) => s.id === sourceId)
                 if (!source) return null
                 return (
                   <Box
                     key={sourceId}
-                    className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-accent-foreground"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-accent/20 px-2.5 py-0.5 text-accent-foreground"
                   >
                     <Icon name="check-icon" size="xs" aria-hidden />
                     <Text size="xs" weight="medium" color="accent">
@@ -104,18 +101,16 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
                 )
               })}
               {selectedSources.length === 0 && (
-                <Text size="xs" color="muted">
-                  Aucune source selectionnee
-                </Text>
+                <Text size="xs" color="muted">Aucune source selectionnee</Text>
               )}
             </Flex>
           </Stack>
 
-          <Divider />
+          <Divider className="my-4" />
 
           <Flex gap="md" wrap className="items-end">
-            <Box className="flex-1 min-w-[180px]">
-              <Text size="sm" weight="medium" color="default" className="mb-1 block">
+            <Box className="flex-1 min-w-[200px]">
+              <Text size="sm" weight="semibold" color="default" className="mb-1 block">
                 Langue principale
               </Text>
               <Select
@@ -131,9 +126,9 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
               </Select>
             </Box>
 
-            <Box className="flex-1 min-w-[180px]">
+            <Box className="flex-1 min-w-[200px]">
               <Flex align="center" justify="between" className="mb-1">
-                <Text size="sm" weight="medium" color="default">
+                <Text size="sm" weight="semibold" color="default">
                   Documents max par langue
                 </Text>
                 <Text size="xs" color="muted">
@@ -143,7 +138,11 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
               <Input
                 type="number"
                 value={maxDocuments}
-                onChange={(e) => onMaxDocumentsChange(Math.max(1, Math.min(1000000, parseInt(e.currentTarget.value) || 1)))}
+                onChange={(e) =>
+                  onMaxDocumentsChange(
+                    Math.max(1, Math.min(1000000, parseInt(e.currentTarget.value) || 1))
+                  )
+                }
                 disabled={isDisabled}
                 min={1}
                 max={1000000}
@@ -153,7 +152,7 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
             </Box>
           </Flex>
 
-          <Divider />
+          <Divider className="my-4" />
 
           <Flex align="center" justify="end" className="pt-2">
             <Button
@@ -164,7 +163,7 @@ export const ScrapePanel: React.FC<ScrapePanelProps> = ({
               disabled={isDisabled || selectedSources.length === 0 || isStarting}
               leftIcon={!isStarting && <Icon name="download-icon" size="md" aria-hidden />}
             >
-              {isStarting ? 'Demarrage...' : 'Demarrer le scraping'}
+              {isStarting ? 'Demarrage en cours...' : 'Demarrer le scraping'}
             </Button>
           </Flex>
         </Stack>

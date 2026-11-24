@@ -239,12 +239,23 @@ class CorpusRepository:
         markdownDir.mkdir(parents=True, exist_ok=True)
         return markdownDir
 
-    def listMarkdownCorpora(self) -> list[CorpusDatasetSummary]:
-        """Group exported markdown files by source, with size and freshness."""
-        markdownDir = self.getMarkdownDir()
+    def listMarkdownCorpora(
+        self, extraDirs: list[Path] | None = None
+    ) -> list[CorpusDatasetSummary]:
+        """Group exported markdown files by source, with size and freshness.
+
+        Includes the default markdown directory plus any extra directories
+        (for example ``data/bible`` for public-domain Bible/Valtorta texts).
+        """
+        dirs: list[Path] = [self.getMarkdownDir()]
+        dirs.extend(extraDirs or [])
         filesBySource: dict[str, list[Path]] = {}
-        for filePath in markdownDir.glob(f"*/*/*{MARKDOWN_SUFFIX}"):
-            filesBySource.setdefault(filePath.parent.parent.name, []).append(filePath)
+        sourceDir: dict[str, Path] = {}
+        for markdownDir in dirs:
+            for filePath in markdownDir.glob(f"*/*/*{MARKDOWN_SUFFIX}"):
+                source = filePath.parent.parent.name
+                filesBySource.setdefault(source, []).append(filePath)
+                sourceDir.setdefault(source, markdownDir)
 
         summaries: list[CorpusDatasetSummary] = []
         for source, files in sorted(filesBySource.items()):
@@ -257,7 +268,7 @@ class CorpusRepository:
                     documentCount=len(files),
                     totalSizeBytes=sum(stat.st_size for stat in stats),
                     updatedAt=datetime.fromtimestamp(latestMtime, tz=timezone.utc),
-                    path=str(markdownDir / source),
+                    path=str(sourceDir[source] / source),
                 )
             )
         return summaries

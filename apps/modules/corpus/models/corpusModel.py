@@ -204,15 +204,12 @@ class WikiScraperConfig:
 class BibleScraperConfig:
     """Bible scraping options."""
 
-    source: str = "bible_gateway"
+    source: str = "bible"
     languages: list[str] = field(default_factory=lambda: ["fr", "en"])
-    translationsPerLang: dict[str, list[str]] = field(
-        default_factory=lambda: {"fr": ["lsg"], "en": ["kjv"]}
+    translationsPerLang: dict[str, str] = field(
+        default_factory=lambda: {"fr": "crampon", "en": "kjv"}
     )
-    bookIds: list[str] = field(default_factory=lambda: ["john"])
-    chapterStart: int = 1
-    chapterEnd: int = 21
-    versePerDocument: bool = True
+    minArticleLength: int = 100
 
 
 @dataclass(frozen=True)

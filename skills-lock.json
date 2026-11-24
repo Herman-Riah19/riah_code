@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "skills": {
+    "design-dashboards": {
+      "source": "dastoyan/skills",
+      "commit": "0ba207d3164c271bfb1088f3d8a4d94a6adc81a3",
+      "sourceType": "github",
+      "skillPath": "design-dashboards/SKILL.md",
+      "computedHash": "a3af3ddcad12123483b595fbf7f57c49f8c06b19d4c091ceeb54a3c58796d4d3"
+    }
+  }
+}

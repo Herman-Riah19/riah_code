@@ -48,6 +48,7 @@ class PipelineOrchestrator:
         checkpointDir: Path,
         markdownExporter: MarkdownExporter | None = None,
         markdownDir: Path | None = None,
+        markdownDirs: dict[str, Path] | None = None,
     ) -> None:
         self._scrapers = scrapers
         self._cleaner = cleaner
@@ -59,6 +60,7 @@ class PipelineOrchestrator:
         self._checkpointDir = checkpointDir
         self._markdownExporter = markdownExporter
         self._markdownDir = markdownDir
+        self._markdownDirs = markdownDirs or {}
 
     def runFullPipeline(self, config: PipelineConfig) -> PipelineResult:
         """Execute the pipeline, optionally resuming at a named stage."""
@@ -146,11 +148,20 @@ class PipelineOrchestrator:
                 counters["documentsDeduplicated"] += 1
                 continue
 
-            if self._markdownExporter is not None and self._markdownDir is not None:
-                self._markdownExporter.exportDocument(cleanDocument, self._markdownDir)
+            if self._markdownExporter is not None:
+                markdownDir = self._markdownDirFor(cleanDocument.source)
+                self._markdownExporter.exportDocument(cleanDocument, markdownDir)
                 counters["documentsExported"] += 1
 
             yield cleanDocument
+
+    def _markdownDirFor(self, source: str) -> Path:
+        """Resolve the markdown destination directory for one source."""
+        if source in self._markdownDirs:
+            return self._markdownDirs[source]
+        if self._markdownDir is not None:
+            return self._markdownDir
+        return self._corpusRepo.getMarkdownDir()
 
     def _shard(self, config: PipelineConfig) -> list[ShardInfo]:
         return self._shardWriter.writeShards(

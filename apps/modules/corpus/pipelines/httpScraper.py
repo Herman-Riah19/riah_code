@@ -37,3 +37,30 @@ class HttpScraper(BaseScraper):
             ) from error
         time.sleep(REQUEST_DELAY_SECONDS)
         return payload
+
+    def _fetchText(
+        self,
+        url: str,
+        encodings: tuple[str, ...] = ("utf-8",),
+    ) -> str:
+        """Fetch a remote text payload, trying the given encodings in order."""
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": DEFAULT_USER_AGENT},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+                raw = response.read()
+        except urllib.error.URLError as error:
+            raise RiahAppError(
+                f"Requete HTTP echouee: {url}",
+                details={"reason": str(error)},
+            ) from error
+
+        fallback = encodings[-1] if encodings else "utf-8"
+        for encoding in encodings:
+            try:
+                return raw.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return raw.decode(fallback, errors="replace")

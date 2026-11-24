@@ -1,6 +1,7 @@
 .venv
 
 data/corpus
+data/bible
 debug-storybook.log
 .pytest_cache
 .ruff_cache

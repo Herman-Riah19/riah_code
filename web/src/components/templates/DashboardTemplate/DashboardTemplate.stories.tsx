@@ -3,7 +3,6 @@ import { DashboardTemplate } from './DashboardTemplate'
 import { Box } from '@/components/atoms/Box'
 import { Text } from '@/components/atoms/Text'
 import { Heading } from '@/components/atoms/Heading'
-import { Icon } from '@/components/atoms/Icon'
 
 const meta: Meta<typeof DashboardTemplate> = {
   title: 'Templates/DashboardTemplate',
@@ -18,27 +17,8 @@ type Story = StoryObj<typeof DashboardTemplate>
 
 export const Default: Story = {
   args: {
-    navbar: {
-      brand: 'Riah Code',
-      badge: 'Dashboard',
-      links: [
-        { label: 'Corpus', href: '#/corpus', isActive: true },
-        { label: 'Entrainement', href: '#/training' },
-        { label: 'Inference', href: '#/inference' },
-      ],
-      actions: [
-        { label: 'Profil', variant: 'ghost' },
-        { label: 'Parametres', variant: 'outline' },
-      ],
-    },
-    header: {
-      eyebrow: 'Corpus',
-      title: 'Tableau de bord Corpus',
-      subtitle: 'Gerez et surveillez vos jeux de donnees d\'entrainement.',
-      actions: [
-        { label: 'Nouveau scraping', onClick: () => alert('New!'), variant: 'primary', leftIcon: <Icon name="plus-icon" size="sm" aria-hidden /> },
-      ],
-    },
+    activeItem: 'corpus',
+    brand: 'Riah Code',
     children: (
       <Box className="space-y-6">
         <Heading level={2} size="lg" weight="semibold" color="default">
@@ -54,39 +34,26 @@ export const Default: Story = {
 
 export const Minimal: Story = {
   args: {
-    navbar: { brand: 'Riah Code', links: [] },
-    header: { title: 'Page simple' },
+    activeItem: 'dashboard',
+    brand: 'Riah Code',
     children: <Text>Contenu minimal</Text>,
   },
 }
 
-export const WithLongContent: Story = {
+export const WithCustomItems: Story = {
   args: {
-    navbar: {
-      brand: 'Riah Code',
-      links: [
-        { label: 'Accueil', href: '#/' },
-        { label: 'Corpus', href: '#/corpus', isActive: true },
-      ],
-    },
-    header: {
-      title: 'Tableau de bord complet',
-      subtitle: 'Description detaillee de la page avec beaucoup de texte pour tester le layout.',
-    },
+    activeItem: 'training',
+    brand: 'Riah Code',
+    sidebarItems: [
+      { id: 'corpus', label: 'Corpus', icon: 'database-icon', href: '/corpus' },
+      { id: 'training', label: 'Entrainement', icon: 'play-icon', href: '/training' },
+      { id: 'settings', label: 'Parametres', icon: 'settings-icon', href: '/settings' },
+    ],
     children: (
-      <Box className="space-y-8" style={{ minHeight: '800px' }}>
-        <Heading level={2} size="xl" weight="bold" color="default">
-          Section 1
+      <Box className="space-y-6">
+        <Heading level={2} size="lg" weight="semibold" color="default">
+          Entrainement
         </Heading>
-        <Box className="h-64 rounded-xl border border-border bg-card" />
-        <Heading level={2} size="xl" weight="bold" color="default">
-          Section 2
-        </Heading>
-        <Box className="h-64 rounded-xl border border-border bg-card" />
-        <Heading level={2} size="xl" weight="bold" color="default">
-          Section 3
-        </Heading>
-        <Box className="h-64 rounded-xl border border-border bg-card" />
       </Box>
     ),
   },

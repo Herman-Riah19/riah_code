@@ -9,19 +9,6 @@ const meta: Meta<typeof LandingTemplate> = {
     layout: 'fullscreen',
   },
   args: {
-    navbar: {
-      brand: 'Riah Code',
-      badge: 'Beta',
-      links: [
-        { label: 'Fonctionnalites', href: '#features', isActive: true },
-        { label: 'Documentation', href: '#docs' },
-        { label: 'Tarifs', href: '#pricing' },
-      ],
-      actions: [
-        { label: 'Connexion', variant: 'ghost' },
-        { label: 'Commencer', variant: 'primary' },
-      ],
-    },
     hero: {
       badge: 'Nouveau : fine-tuning en 1 clic',
       title: 'Entrainez vos modeles de langage, sans friction',
@@ -104,7 +91,6 @@ export const WithoutHero: Story = {
 
 export const Barebones: Story = {
   args: {
-    navbar: { brand: 'Riah Code', links: [], actions: [] },
     hero: undefined,
     features: undefined,
     callToAction: undefined,
