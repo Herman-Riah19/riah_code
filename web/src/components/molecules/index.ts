@@ -9,3 +9,6 @@ export type { StatCardProps } from './StatCard'
 
 export { FeatureCard } from './FeatureCard'
 export type { FeatureCardProps } from './FeatureCard'
+
+export { ThemeToggle } from './ThemeToggle'
+export type { ThemeToggleProps } from './ThemeToggle'

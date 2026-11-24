@@ -56,7 +56,7 @@ const BORDER_MAP: Record<BoxBorder, string> = {
 }
 
 const BACKGROUND_MAP: Record<BoxBackground, string> = {
-  transparent: 'bg-transparent',
+  transparent: '',
   default: 'bg-background',
   muted: 'bg-muted',
   accent: 'bg-accent',

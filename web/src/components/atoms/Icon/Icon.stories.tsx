@@ -13,7 +13,7 @@ const meta: Meta<typeof Icon> = {
   argTypes: {
     name: {
       control: 'text',
-      description: "Nom de l'icône (référence /icons.svg#nom)",
+      description: "Nom de l'icône (alias lucide, ex. `settings`, `database-icon`)",
     },
     size: {
       control: 'select',
