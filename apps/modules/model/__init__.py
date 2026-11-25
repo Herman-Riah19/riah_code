@@ -1,30 +1,31 @@
 # apps/modules/model/__init__.py
-"""Model Module - Transformer architecture, training, and inference"""
+"""Model Module - Transformer architecture, training, and inference."""
 
+from .ml.modelRunner import ModelRunner
+from .ml.sampler import Sampler
+from .ml.transformer import TransformerBlock, TransformerLM
 from .models.modelModel import (
-    ModelConfig,
     MODEL_PRESETS,
-    TrainingConfig,
     Checkpoint,
     GenerationOptions,
+    ModelConfig,
+    TrainingConfig,
     TrainingResult,
 )
 from .repositories.checkpointRepository import CheckpointRepository
-from .services.trainingService import TrainingService
-from .services.inferenceService import InferenceService
-from .controllers.trainingController import trainingBlueprint
-from .controllers.inferenceController import inferenceBlueprint
+from .repositories.modelRepository import ModelRepository
 
 __all__ = [
-    "ModelConfig",
     "MODEL_PRESETS",
-    "TrainingConfig",
     "Checkpoint",
-    "GenerationOptions",
-    "TrainingResult",
     "CheckpointRepository",
-    "TrainingService",
-    "InferenceService",
-    "trainingBlueprint",
-    "inferenceBlueprint",
+    "GenerationOptions",
+    "ModelConfig",
+    "ModelRepository",
+    "ModelRunner",
+    "Sampler",
+    "TrainingConfig",
+    "TrainingResult",
+    "TransformerBlock",
+    "TransformerLM",
 ]
