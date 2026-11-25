@@ -10,7 +10,6 @@ const meta: Meta<typeof CorpusTable> = {
   tags: ['autodocs'],
   argTypes: {
     onFileClick: { action: 'fileClicked' },
-    onPageChange: { action: 'pageChanged' },
   },
 }
 
@@ -40,18 +39,15 @@ export const WithData: Story = {
   args: {
     files: mockFiles,
     dataset: mockDataset,
-    page: 1,
     pageSize: 10,
   },
 }
 
-export const WithPagination: Story = {
+export const WithSearchAndPagination: Story = {
   args: {
     files: mockFiles,
     dataset: mockDataset,
-    page: 1,
-    pageSize: 10,
-    onPageChange: (page: number) => alert(`Page: ${page}`),
+    pageSize: 5,
   },
 }
 
@@ -80,7 +76,6 @@ export const SinglePage: Story = {
   args: {
     files: mockFiles.slice(0, 3),
     dataset: mockDataset,
-    page: 1,
     pageSize: 10,
   },
 }

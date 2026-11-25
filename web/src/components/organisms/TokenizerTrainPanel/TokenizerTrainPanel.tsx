@@ -9,6 +9,7 @@ import { Button } from '@/components/atoms/Button'
 import { Input } from '@/components/atoms/Input'
 import { Icon } from '@/components/atoms/Icon'
 import { ToggleGroup, type ToggleOption } from '@/components/molecules/ToggleGroup'
+import { Textfield } from '@/components/molecules/Textfield'
 
 export interface TokenizerTrainPanelProps {
   vocabSize: number
@@ -75,10 +76,9 @@ export const TokenizerTrainPanel: React.FC<TokenizerTrainPanelProps> = ({
         <Divider className="mb-2" />
 
         <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Stack spacing="xs">
-            <Text size="sm" weight="semibold" color="default">
-              Taille du vocabulaire
-            </Text>
+          <Textfield
+            label="Taille du vocabulaire"
+          >
             <Input
               type="number"
               value={vocabSize}
@@ -88,12 +88,11 @@ export const TokenizerTrainPanel: React.FC<TokenizerTrainPanelProps> = ({
               disabled={isDisabled}
               onChange={(event) => clampNumber(event.currentTarget.value, 256, 200000, onVocabSizeChange)}
             />
-          </Stack>
+          </Textfield>
 
-          <Stack spacing="xs">
-            <Text size="sm" weight="semibold" color="default">
-              Frequence minimale
-            </Text>
+          <Textfield
+            label="Frequence minimale"
+          >
             <Input
               type="number"
               value={minFrequency}
@@ -102,12 +101,11 @@ export const TokenizerTrainPanel: React.FC<TokenizerTrainPanelProps> = ({
               disabled={isDisabled}
               onChange={(event) => clampNumber(event.currentTarget.value, 1, 100, onMinFrequencyChange)}
             />
-          </Stack>
+          </Textfield>
 
-          <Stack spacing="xs">
-            <Text size="sm" weight="semibold" color="default">
-              Echantillon du corpus
-            </Text>
+          <Textfield
+            label="Echantillon du corpus"
+          >
             <Input
               type="number"
               value={corpusSampleSize}
@@ -119,12 +117,11 @@ export const TokenizerTrainPanel: React.FC<TokenizerTrainPanelProps> = ({
                 clampNumber(event.currentTarget.value, 1, 1000000, onCorpusSampleSizeChange)
               }
             />
-          </Stack>
+          </Textfield>
 
-          <Stack spacing="xs">
-            <Text size="sm" weight="semibold" color="default">
-              Threads
-            </Text>
+          <Textfield
+            label="Threads"
+          >
             <Input
               type="number"
               value={numThreads}
@@ -133,7 +130,7 @@ export const TokenizerTrainPanel: React.FC<TokenizerTrainPanelProps> = ({
               disabled={isDisabled}
               onChange={(event) => clampNumber(event.currentTarget.value, 1, 64, onNumThreadsChange)}
             />
-          </Stack>
+          </Textfield>
         </Box>
 
         <Divider className="my-2" />

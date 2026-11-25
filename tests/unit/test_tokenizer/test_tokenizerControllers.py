@@ -255,3 +255,40 @@ class TestTokenizerController:
         assert len(payload["tokens"]) == payload["tokenCount"]
         assert len(payload["tokenIds"]) == payload["tokenCount"]
         assert payload["decoded"].strip() == "Le petit chat dort."
+
+    def test_vocab_requires_tokenizer(self, client):
+        response = client.get(
+            "/api/tokenizer/vocab",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 404
+        assert response.get_json() == {"exists": False, "tokens": []}
+
+    def test_vocab_returns_tokens(self, client, container: dict):
+        documents = [
+            makeCleanDocument(f"doc-{index}", text)
+            for index, text in enumerate(TINY_CORPUS_TEXTS)
+        ]
+        container["corpusRepo"].saveClean(documents)
+        client.post(
+            "/api/tokenizer/train",
+            headers=AUTH_HEADERS,
+            json={"vocabSize": 300, "minFrequency": 1, "languages": ["fr"]},
+        )
+
+        response = client.get(
+            "/api/tokenizer/vocab",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        payload = response.get_json()
+        assert payload["exists"] is True
+        assert len(payload["tokens"]) > 0
+        first = payload["tokens"][0]
+        assert set(first) == {"token", "tokenId"}
+        assert first["tokenId"] == 0
+        ids = [t["tokenId"] for t in payload["tokens"]]
+        assert ids == sorted(ids)
+

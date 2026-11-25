@@ -125,6 +125,11 @@ class TokenizerService:
             "decoded": tokenizer.decode(tokenIds),
         }
 
+    def getVocab(self) -> list[dict[str, int | str]]:
+        """Return every (token, id) pair of the stored vocabulary."""
+        tokenizer, _ = self._tokenizerRepo.load()
+        return tokenizer.getAllTokens()
+
     def resolveTokenizerPath(self, tokenizerPath: str | None) -> Path:
         """Resolve a tokenizer path and forbid escaping the tokenizer directory."""
         if tokenizerPath is None:

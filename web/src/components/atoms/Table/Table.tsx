@@ -80,6 +80,7 @@ export const TableHead: React.FC<TableHeadProps> = ({ className, ...rest }) => {
 export interface TableCellProps extends React.HTMLAttributes<HTMLTableCellElement> {
   children?: React.ReactNode
   className?: string
+  colSpan?: number
 }
 
 export const TableCell: React.FC<TableCellProps> = ({ className, ...rest }) => {

@@ -2,6 +2,7 @@ import type {
   EncodeCorpusPayload,
   TokenPreview,
   TokenizerJob,
+  TokenizerVocabEntry,
   TokenizerVocabInfo,
   TrainTokenizerPayload,
 } from '@/types/tokenizer'
@@ -48,5 +49,12 @@ export const tokenizerApi = {
       method: 'POST',
       body: JSON.stringify({ text }),
     })
+  },
+
+  async getVocab(): Promise<TokenizerVocabEntry[]> {
+    const payload = await request<{ exists: boolean; tokens: TokenizerVocabEntry[] }>(
+      '/api/tokenizer/vocab',
+    )
+    return payload.tokens
   },
 }

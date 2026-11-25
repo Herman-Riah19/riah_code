@@ -11,6 +11,8 @@ import { Button } from '@/components/atoms/Button'
 import { Textarea } from '@/components/atoms/Textarea'
 import { Icon } from '@/components/atoms/Icon'
 import { Alert } from '@/components/molecules/Alert'
+import { Textfield } from '@/components/molecules/Textfield'
+import { StatTile } from '@/components/molecules/StatTile'
 import { formatNumber } from '@/utils/format'
 import type { TokenPreview } from '@/types/tokenizer'
 
@@ -32,20 +34,6 @@ function displayToken(token: string): string {
     .replace(/\n/g, '⏎')
     .replace(/\t/g, '⇥')
 }
-
-interface PreviewMetricProps {
-  label: string
-  value: string
-}
-
-const PreviewMetric: React.FC<PreviewMetricProps> = ({ label, value }) => (
-  <Box className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
-    <Text size="xs" color="muted">{label}</Text>
-    <Text size="lg" weight="bold" color="default" className="font-mono">
-      {value}
-    </Text>
-  </Box>
-)
 
 export const TokenizerPreviewPanel: React.FC<TokenizerPreviewPanelProps> = ({
   preview,
@@ -90,10 +78,7 @@ export const TokenizerPreviewPanel: React.FC<TokenizerPreviewPanelProps> = ({
 
         <Divider className="mb-2" />
 
-        <Stack spacing="xs">
-          <Text size="sm" weight="semibold" color="default">
-            Texte a analyser
-          </Text>
+        <Textfield label="Texte a analyser">
           <Textarea
             value={text}
             onChange={(event) => setText(event.currentTarget.value)}
@@ -101,7 +86,7 @@ export const TokenizerPreviewPanel: React.FC<TokenizerPreviewPanelProps> = ({
             minRows={4}
             disabled={isDisabled}
           />
-        </Stack>
+        </Textfield>
 
         {error && (
           <Alert
@@ -138,14 +123,19 @@ export const TokenizerPreviewPanel: React.FC<TokenizerPreviewPanelProps> = ({
             <Divider className="my-2" />
 
             <Box className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <PreviewMetric label="Tokens" value={formatNumber(preview.tokenCount)} />
-              <PreviewMetric label="Caracteres" value={formatNumber(preview.characterCount)} />
-              <PreviewMetric label="Compression" value={`${preview.compressionRatio.toFixed(2)}`} />
-              <PreviewMetric
+              <StatTile label="Tokens" value={formatNumber(preview.tokenCount)} />
+              <StatTile label="Caracteres" value={formatNumber(preview.characterCount)} />
+              <StatTile
+                label="Compression"
+                value={`${preview.compressionRatio.toFixed(2)}`}
+              />
+              <StatTile
                 label="Dernier ID"
-                value={preview.tokenIds.length > 0
-                  ? formatNumber(preview.tokenIds[preview.tokenIds.length - 1])
-                  : '-'}
+                value={
+                  preview.tokenIds.length > 0
+                    ? formatNumber(preview.tokenIds[preview.tokenIds.length - 1])
+                    : '-'
+                }
               />
             </Box>
 

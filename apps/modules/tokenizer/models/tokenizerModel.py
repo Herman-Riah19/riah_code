@@ -205,6 +205,15 @@ class BPETokenizer:
         """Return the token for an id, or None when unknown."""
         return self._idToToken.get(tokenId)
 
+    def getAllTokens(self) -> list[dict[str, int | str]]:
+        """Return every (token, id) pair of the vocabulary, sorted by id."""
+        return [
+            {"token": token, "tokenId": tokenId}
+            for token, tokenId in sorted(
+                self._vocab.items(), key=lambda item: item[1]
+            )
+        ]
+
 
 @dataclass(frozen=True)
 class EncodedCorpusStats:

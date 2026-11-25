@@ -124,3 +124,14 @@ def getTokenizerInfo(user: Any) -> Any:
 def previewTokens(validated: TokenizerPreviewRequest, user: Any) -> Any:
     """Tokenize a sample text with the stored tokenizer."""
     return jsonify(TokenizerContainer.getService().previewText(validated.text))
+
+
+@tokenizerBlueprint.route("/vocab", methods=["GET"])
+@requireAuth
+def getTokenizerVocab(user: Any) -> Any:
+    """Return every (token, id) pair of the stored vocabulary."""
+    repository = TokenizerContainer.getTokenizerRepository()
+    if not repository.exists():
+        return jsonify({"exists": False, "tokens": []}), 404
+    tokens = TokenizerContainer.getService().getVocab()
+    return jsonify({"exists": True, "tokens": tokens})

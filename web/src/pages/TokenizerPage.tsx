@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { Box } from '@/components/atoms/Box'
-import { Button } from '@/components/atoms/Button'
 import { Icon } from '@/components/atoms/Icon'
+import { Button } from '@/components/atoms/Button'
 import { Alert } from '@/components/molecules/Alert'
 import { StatCard } from '@/components/molecules/StatCard'
+import { TabBar, type TabBarItem } from '@/components/molecules/TabBar'
 import { JobMonitor } from '@/components/organisms/JobMonitor'
 import { TokenizerInfoPanel } from '@/components/organisms/TokenizerInfoPanel'
 import { TokenizerTrainPanel } from '@/components/organisms/TokenizerTrainPanel'
 import { TokenizerEncodePanel } from '@/components/organisms/TokenizerEncodePanel'
 import { TokenizerPreviewPanel } from '@/components/organisms/TokenizerPreviewPanel'
+import { TokenizerTokensTable } from '@/components/organisms/TokenizerTokensTable'
 import { useTokenizerDashboard } from '@/hooks/useTokenizerDashboard'
 import { formatNumber } from '@/utils/format'
 import type { JobConfigField } from '@/types/job'
@@ -39,6 +42,16 @@ const TRAIN_CONFIG_FIELDS: JobConfigField[] = [
 const ENCODE_CONFIG_FIELDS: JobConfigField[] = [
   { key: 'languages', label: 'Langues', icon: 'globe-icon' },
   { key: 'shardSizeTokens', label: 'Taille shard', icon: 'hard-drive-icon' },
+]
+
+type TabId = 'preview' | 'info' | 'train' | 'encode' | 'tokens'
+
+const TAB_ITEMS: TabBarItem<TabId>[] = [
+  { id: 'preview', label: 'Previsualisation', icon: 'search-icon' },
+  { id: 'info', label: 'Informations', icon: 'info-icon' },
+  { id: 'train', label: 'Entrainement', icon: 'sparkles-icon' },
+  { id: 'encode', label: 'Encodage', icon: 'hard-drive-icon' },
+  { id: 'tokens', label: 'Tokens', icon: 'hash-icon' },
 ]
 
 export function TokenizerPage() {
@@ -74,6 +87,8 @@ export function TokenizerPage() {
     refresh,
   } = useTokenizerDashboard()
 
+  const [activeTab, setActiveTab] = useState<TabId>('preview')
+
   const isActiveJob = job?.status === 'pending' || job?.status === 'running'
   const isEncodingJob = job?.jobType === 'corpus_encoding'
   const jobTitle = isEncodingJob
@@ -104,35 +119,39 @@ export function TokenizerPage() {
         />
       )}
 
-      {/* KPI Overview - decision cues at top-left */}
+      {/* KPI Overview - always visible at the top */}
       <Box className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
         <StatCard
-          title="Tokens appris par le BPE"
+          title="Vocabulaire"
           value={info ? formatNumber(info.vocabSize) : '-'}
+          subtitle="Tokens appris par le BPE"
           badge={{
             variant: info ? 'success' : 'muted',
             label: info ? 'Pret' : 'Vide',
           }}
         />
         <StatCard
-          title="Caracteres par token"
+          title="Compression"
           value={info ? info.compressionRatio.toFixed(2) : '-'}
+          subtitle="Caracteres par token"
           badge={{
             variant: info ? 'accent' : 'muted',
             label: info ? 'BPE byte-level' : 'Indisponible',
           }}
         />
         <StatCard
-          title="Tokens inconnus a l'encodage"
+          title="Taux OOV"
           value={info ? `${(info.oovRate * 100).toFixed(2)} %` : '-'}
+          subtitle="Tokens inconnus a l encodage"
           badge={{
             variant: info ? (info.oovRate > 0 ? 'warning' : 'success') : 'muted',
             label: info ? (info.oovRate > 0 ? 'A surveiller' : 'Aucun') : 'Indisponible',
           }}
         />
         <StatCard
-          title={job ? `Statut: ${job.status}` : 'Aucun travail'}
+          title="Travaux"
           value={job ? '1' : '0'}
+          subtitle={job ? `Statut: ${job.status}` : 'Aucun travail'}
           badge={{
             variant: isActiveJob
               ? 'accent'
@@ -152,7 +171,7 @@ export function TokenizerPage() {
         />
       </Box>
 
-      {/* Job Monitor - operational status with freshness */}
+      {/* Job Monitor - operational status */}
       {job && (
         <JobMonitor
           job={job}
@@ -164,13 +183,31 @@ export function TokenizerPage() {
         />
       )}
 
-      {/* Tokenizer Info - current artifacts */}
-      <Box className="mb-8">
-        <TokenizerInfoPanel info={info} isLoading={isLoading} />
-      </Box>
+      {/* Tab navigation - Preview first (was at the bottom), then Info, Train, Encode, Tokens */}
+      <TabBar
+        items={TAB_ITEMS}
+        activeId={activeTab}
+        onChange={setActiveTab}
+        className="mb-6"
+      />
 
-      {/* Training and encoding actions */}
-      <Box className="grid grid-cols-1 gap-6 xl:grid-cols-2 mb-8">
+      {activeTab === 'preview' && (
+        <TokenizerPreviewPanel
+          preview={preview}
+          isPreviewing={isPreviewing}
+          error={previewError}
+          onPreview={(text) => void runPreview(text)}
+          onClear={clearPreview}
+          isDisabled={isLoading}
+          className="mb-8"
+        />
+      )}
+
+      {activeTab === 'info' && (
+        <TokenizerInfoPanel info={info} isLoading={isLoading} className="mb-8" />
+      )}
+
+      {activeTab === 'train' && (
         <TokenizerTrainPanel
           vocabSize={vocabSize}
           onVocabSizeChange={setVocabSize}
@@ -187,6 +224,9 @@ export function TokenizerPage() {
           isStarting={isSubmitting}
           isDisabled={isLoading || isActiveJob}
         />
+      )}
+
+      {activeTab === 'encode' && (
         <TokenizerEncodePanel
           shardSizeTokens={shardSizeTokens}
           onShardSizeTokensChange={setShardSizeTokens}
@@ -198,18 +238,11 @@ export function TokenizerPage() {
           isStarting={isSubmitting}
           isDisabled={isLoading || isActiveJob}
         />
-      </Box>
+      )}
 
-      {/* Token preview playground */}
-      <TokenizerPreviewPanel
-        preview={preview}
-        isPreviewing={isPreviewing}
-        error={previewError}
-        onPreview={(text) => void runPreview(text)}
-        onClear={clearPreview}
-        isDisabled={isLoading}
-        className="mb-8"
-      />
+      {activeTab === 'tokens' && (
+        <TokenizerTokensTable className="mb-8" />
+      )}
 
       <Button
         variant="outline"

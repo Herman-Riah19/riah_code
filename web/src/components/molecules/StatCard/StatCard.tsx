@@ -7,6 +7,7 @@ import { Badge } from '@/components/atoms/Badge'
 export interface StatCardProps {
   title: string
   value: string | number
+  subtitle?: string
   trend?: {
     value: string
     isPositive: boolean

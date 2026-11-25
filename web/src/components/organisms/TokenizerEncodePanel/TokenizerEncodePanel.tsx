@@ -10,6 +10,7 @@ import { Input } from '@/components/atoms/Input'
 import { Icon } from '@/components/atoms/Icon'
 import { Alert } from '@/components/molecules/Alert'
 import { ToggleGroup, type ToggleOption } from '@/components/molecules/ToggleGroup'
+import { Textfield } from '@/components/molecules/Textfield'
 import { formatNumber } from '@/utils/format'
 
 export interface TokenizerEncodePanelProps {
@@ -74,15 +75,10 @@ export const TokenizerEncodePanel: React.FC<TokenizerEncodePanelProps> = ({
           />
         )}
 
-        <Stack spacing="xs">
-          <Flex align="center" justify="between">
-            <Text size="sm" weight="semibold" color="default">
-              Taille des shards (tokens)
-            </Text>
-            <Text size="xs" color="muted">
-              {formatNumber(shardSizeTokens)}
-            </Text>
-          </Flex>
+        <Textfield
+          label="Taille des shards (tokens)"
+          helperText={formatNumber(shardSizeTokens)}
+        >
           <Input
             type="number"
             value={shardSizeTokens}
@@ -92,7 +88,7 @@ export const TokenizerEncodePanel: React.FC<TokenizerEncodePanelProps> = ({
             disabled={isDisabled}
             onChange={(event) => handleShardSizeChange(event.currentTarget.value)}
           />
-        </Stack>
+        </Textfield>
 
         <Stack spacing="sm">
           <Flex align="center" justify="between">

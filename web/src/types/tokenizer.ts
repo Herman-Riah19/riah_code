@@ -59,6 +59,22 @@ export interface TokenPreview {
   decoded: string
 }
 
+/** One vocabulary entry returned by the backend `/api/tokenizer/vocab`. */
+export interface TokenizerVocabEntry {
+  token: string
+  tokenId: number
+}
+
+/** One token entry in the token explorer table. */
+export interface TokenizerTokenEntry {
+  token: string
+  tokenId: number
+  source: string
+  language: string
+  frequency: number
+  firstSeen: string
+}
+
 export interface TokenizerDashboardState {
   info: TokenizerVocabInfo | null
   job: TokenizerJob | null

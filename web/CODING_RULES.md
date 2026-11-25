@@ -92,6 +92,8 @@ web/src/
   - `FormField` = `Label` (Text) + `Input` + `ErrorMessage` (Text)
   - `SearchBar` = `Input` + `IconButton` (Button + Icon)
   - `StatCard` = `Box` + `Icon` + `Heading` + `Text`
+  - `Textfield` = `Label` (Text) + controle (Input / Select / Textarea) + aide ou erreur
+  - `StatTile` = libelle + valeur en gras/mono + indication optionnelle
   - `ButtonGroup` = ensemble de `Button`
 
 ### 2.3. Les Organismes (`src/components/organisms/`)
@@ -125,6 +127,18 @@ web/src/
 3. **Inversion de contrôle (Slots / `children`)** :
    - Favoriser la composition plutôt que la multiplication de props rigides.
    - Préférer `leftIcon?: ReactNode` ou `children` plutôt qu'un texte rigide imposé.
+
+### 3.4. Factorisation des patterns repetitifs en molecules
+
+Quand un même assemblage d'atomes (libelle + controle, tuile libelle/valeur, carte
+panneau, etc.) apparait **au moins deux fois** dans l'application, il doit etre
+extrait dans une molecule dediee sous `src/components/molecules/` :
+
+- **Pattern label + controle** (`<Stack><Text label /><Input /></Stack>`) → `Textfield`
+- **Pattern libelle + valeur en mono** → `StatTile`
+- Tout composant extrait doit posseder son fichier `*.stories.tsx` (Storybook).
+
+Interdit de dupliquer ce type de assemblage "en ligne" dans plusieurs composants.
 
 ---
 

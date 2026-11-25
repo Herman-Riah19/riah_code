@@ -8,6 +8,7 @@ import { Badge } from '@/components/atoms/Badge'
 import { Divider } from '@/components/atoms/Divider'
 import { Icon } from '@/components/atoms/Icon'
 import { EmptyState } from '@/components/molecules/EmptyState'
+import { StatTile } from '@/components/molecules/StatTile'
 import { formatDate, formatNumber } from '@/utils/format'
 import type { TokenizerVocabInfo } from '@/types/tokenizer'
 
@@ -16,22 +17,6 @@ export interface TokenizerInfoPanelProps {
   isLoading?: boolean
   className?: string
 }
-
-interface InfoMetricProps {
-  label: string
-  value: string
-  hint?: string
-}
-
-const InfoMetric: React.FC<InfoMetricProps> = ({ label, value, hint }) => (
-  <Box className="flex flex-col gap-1 rounded-lg bg-muted/50 p-4">
-    <Text size="xs" color="muted">{label}</Text>
-    <Text size="xl" weight="bold" color="default" className="font-mono">
-      {value}
-    </Text>
-    {hint && <Text size="xs" color="muted">{hint}</Text>}
-  </Box>
-)
 
 export const TokenizerInfoPanel: React.FC<TokenizerInfoPanelProps> = ({
   info,
@@ -95,25 +80,29 @@ export const TokenizerInfoPanel: React.FC<TokenizerInfoPanelProps> = ({
         {!isLoading && info && (
           <Stack spacing="md">
             <Box className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <InfoMetric
+              <StatTile
                 label="Taille du vocabulaire"
                 value={formatNumber(info.vocabSize)}
                 hint="tokens disponibles"
+                valueSize="xl"
               />
-              <InfoMetric
+              <StatTile
                 label="Compression"
                 value={info.compressionRatio.toFixed(2)}
                 hint="caracteres / token"
+                valueSize="xl"
               />
-              <InfoMetric
+              <StatTile
                 label="Taux OOV"
                 value={`${(info.oovRate * 100).toFixed(2)} %`}
                 hint="tokens inconnus"
+                valueSize="xl"
               />
-              <InfoMetric
+              <StatTile
                 label="Tokens speciaux"
                 value={Object.keys(info.specialTokenIds).length.toString()}
                 hint="reserves au modele"
+                valueSize="xl"
               />
             </Box>
 
