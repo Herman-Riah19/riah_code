@@ -187,14 +187,27 @@ class CheckpointRepository:
             )
         return int(row["total"]) if row is not None else 0
 
-    def pruneOld(self, keepLastN: int = 3, modelName: str | None = None) -> int:
-        """Delete the oldest checkpoints beyond `keepLastN` and return the count."""
+    def pruneOld(
+        self,
+        keepLastN: int = 3,
+        modelName: str | None = None,
+        protectBest: bool = True,
+    ) -> int:
+        """Delete the oldest checkpoints beyond `keepLastN` and return the count.
+
+        The checkpoint flagged as best is never pruned unless `protectBest` is
+        disabled, so inference always keeps a usable model.
+        """
         if keepLastN < 0:
             raise ValueError("keepLastN must be >= 0")
         keepIds = [
             checkpoint.id
             for checkpoint in self.listAll(limit=keepLastN, modelName=modelName)
         ]
+        if protectBest:
+            best = self.findBest(modelName=modelName)
+            if best is not None:
+                keepIds.append(best.id)
         if modelName is None:
             rows = self._db.fetchAll("SELECT id FROM checkpoints")
         else:

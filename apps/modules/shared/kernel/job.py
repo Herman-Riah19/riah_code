@@ -1,10 +1,11 @@
 # apps/modules/shared/kernel/job.py
 """Job primitives shared by every long-running module."""
+
 from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from threading import RLock
 from typing import Any
@@ -44,6 +45,8 @@ class Job:
     finishedAt: datetime | None = None
     progress: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+    resumeFrom: str | None = None
+    result: dict[str, Any] | None = None
 
     @classmethod
     def create(
@@ -59,7 +62,7 @@ class Job:
             status=JobStatus.PENDING,
             config=config,
             userId=userId,
-            createdAt=datetime.now(timezone.utc),
+            createdAt=datetime.now(UTC),
         )
 
     def toDict(self) -> dict[str, Any]:
@@ -75,6 +78,8 @@ class Job:
             "finishedAt": self.finishedAt.isoformat() if self.finishedAt else None,
             "progress": self.progress,
             "error": self.error,
+            "resumeFrom": self.resumeFrom,
+            "result": self.result,
         }
 
 
@@ -94,3 +99,12 @@ class JobRepository:
         """Return a job by identifier, or None when unknown."""
         with self._lock:
             return self._jobs.get(jobId)
+
+    def listAll(self, userId: str | None = None, limit: int = 50) -> list[Job]:
+        """Return the most recent jobs, optionally scoped to one user."""
+        if limit <= 0:
+            return []
+        with self._lock:
+            jobs = [job for job in self._jobs.values() if userId is None or job.userId == userId]
+        jobs.sort(key=lambda job: job.createdAt, reverse=True)
+        return jobs[:limit]

@@ -7,6 +7,7 @@ import math
 
 import pytest
 import torch
+from tinyModel import tinyModelConfig
 from torch.nn import functional as F
 
 from apps.modules.model.ml.attention import MultiHeadAttention
@@ -15,7 +16,7 @@ from apps.modules.model.ml.embedding import (
     applyRotaryEmbedding,
     rotateHalf,
 )
-from apps.modules.model.ml.feedForward import GELUMlp, GeGLU, SwiGLU, buildFeedForward
+from apps.modules.model.ml.feedForward import GeGLU, GELUMlp, SwiGLU, buildFeedForward
 from apps.modules.model.ml.loss import crossEntropyLoss, perplexity
 from apps.modules.model.ml.normalization import (
     LayerNormBlock,
@@ -23,8 +24,6 @@ from apps.modules.model.ml.normalization import (
     buildNormalization,
 )
 from apps.modules.model.ml.transformer import TransformerBlock, TransformerLM
-
-from tinyModel import tinyModelConfig
 
 
 class TestNormalization:
@@ -157,12 +156,8 @@ class TestFeedForward:
 
     def test_build_feed_forward_selects_variant(self) -> None:
         assert isinstance(buildFeedForward(tinyModelConfig()), SwiGLU)
-        assert isinstance(
-            buildFeedForward(tinyModelConfig(activation="gelu")), GELUMlp
-        )
-        assert isinstance(
-            buildFeedForward(tinyModelConfig(activation="geglu")), GeGLU
-        )
+        assert isinstance(buildFeedForward(tinyModelConfig(activation="gelu")), GELUMlp)
+        assert isinstance(buildFeedForward(tinyModelConfig(activation="geglu")), GeGLU)
 
 
 class TestLoss:
@@ -171,9 +166,7 @@ class TestLoss:
     def test_matches_torch_cross_entropy(self) -> None:
         logits = torch.randn(2, 4, 10)
         targets = torch.randint(0, 10, (2, 4))
-        expected = F.cross_entropy(
-            logits.reshape(-1, 10), targets.reshape(-1)
-        )
+        expected = F.cross_entropy(logits.reshape(-1, 10), targets.reshape(-1))
         torch.testing.assert_close(crossEntropyLoss(logits, targets), expected)
 
     def test_label_smoothing_changes_value(self) -> None:
@@ -212,9 +205,7 @@ class TestTransformer:
         assert loss is not None
         loss.backward()
         gradients = [
-            parameter.grad
-            for parameter in tinyModel.parameters()
-            if parameter.grad is not None
+            parameter.grad for parameter in tinyModel.parameters() if parameter.grad is not None
         ]
         assert gradients
         assert all(torch.isfinite(gradient).all() for gradient in gradients)
@@ -251,8 +242,6 @@ class TestTransformer:
 
     def test_block_returns_cache_when_requested(self, tinyConfig) -> None:
         block = TransformerBlock(tinyConfig)
-        hidden, cache = block(
-            torch.randn(1, 3, tinyConfig.dim), useCache=True
-        )
+        hidden, cache = block(torch.randn(1, 3, tinyConfig.dim), useCache=True)
         assert hidden.shape == (1, 3, tinyConfig.dim)
         assert cache is not None

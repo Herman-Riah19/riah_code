@@ -1,5 +1,6 @@
 # apps/modules/model/repositories/modelRepository.py
 """Model repository - architecture presets and named JSON configs."""
+
 from __future__ import annotations
 
 import json

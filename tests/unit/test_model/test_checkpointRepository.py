@@ -3,16 +3,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from tinyModel import tinyModelConfig, tinyTrainingConfig
 
 from apps.modules.model.models.modelModel import Checkpoint
 from apps.modules.model.repositories.checkpointRepository import CheckpointRepository
 from apps.modules.shared.kernel.exceptions import ResourceNotFoundError
-
-from tinyModel import tinyModelConfig, tinyTrainingConfig
 
 
 def _checkpoint(
@@ -34,7 +33,7 @@ def _checkpoint(
         valLoss=valLoss,
         modelConfig=tinyModelConfig(),
         trainingConfig=tinyTrainingConfig(),
-        createdAt=datetime(2026, 1, 1, tzinfo=timezone.utc) + timedelta(minutes=step),
+        createdAt=datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=step),
         isBest=isBest,
         modelName=modelName,
         metadata={"tag": checkpointId},
@@ -173,7 +172,7 @@ class TestCheckpointDeletion:
             epoch=0,
             loss=1.0,
             modelConfig=tinyModelConfig(),
-            createdAt=datetime.now(timezone.utc),
+            createdAt=datetime.now(UTC),
         )
         repository.save(checkpoint, state={"model": {}})
 

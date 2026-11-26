@@ -1,5 +1,6 @@
 # apps/modules/model/ml/modelRunner.py
 """High-level interface around a TransformerLM (device, precision, checkpoints)."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -33,9 +34,7 @@ class ModelRunner:
         tokenizer: BPETokenizer | None = None,
     ) -> None:
         self._config = config
-        self._device = device or torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self._device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._dtype = self._resolveDtype(config.dtype)
         self._tokenizer = tokenizer
 
@@ -65,6 +64,10 @@ class ModelRunner:
     def dtype(self) -> torch.dtype:
         """Compute dtype actually used for inference."""
         return self._dtype
+
+    def setTokenizer(self, tokenizer: BPETokenizer | None) -> None:
+        """Attach the tokenizer used to resolve stop sequences at generation time."""
+        self._tokenizer = tokenizer
 
     def _resolveDtype(self, dtypeName: str) -> torch.dtype:
         """CPU does not support fp16 reliably, so fall back to fp32 there."""

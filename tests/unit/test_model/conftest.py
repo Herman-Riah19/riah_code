@@ -5,12 +5,11 @@ from __future__ import annotations
 
 import pytest
 import torch
+from tinyModel import tinyModelConfig
 
 from apps.modules.model.ml.modelRunner import ModelRunner
 from apps.modules.model.ml.transformer import TransformerLM
 from apps.modules.model.models.modelModel import ModelConfig
-
-from tinyModel import tinyModelConfig
 
 
 @pytest.fixture

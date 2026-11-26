@@ -3,16 +3,19 @@
 
 from typing import Any
 
+ErrorDetails = dict[str, Any] | list[Any]
+
 
 class RiahAppError(Exception):
     """Base exception for all application errors"""
+
     statusCode: int = 500
     errorCode: str = "INTERNAL_ERROR"
 
-    def __init__(self, message: str, details: dict[str, Any] | None = None):
+    def __init__(self, message: str, details: ErrorDetails | None = None) -> None:
         super().__init__(message)
         self.message = message
-        self.details = details or {}
+        self.details: ErrorDetails = details if details is not None else {}
 
     def to_dict(self) -> dict[str, Any]:
         return {

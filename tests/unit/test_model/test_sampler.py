@@ -49,9 +49,10 @@ class TestSamplerStrategies:
         assert samples == {0}
 
     def test_repetition_penalty_demotes_repeated_token(self) -> None:
-        logits = torch.tensor([[0.0, 5.0, 0.0]])
+        logits = torch.tensor([[1.0, 5.0, 0.0]])
         sampler = Sampler(temperature=0.0, repetitionPenalty=10.0)
         token = sampler.sample(logits, generatedTokens=[1])
+        # 5.0 / 10 = 0.5, below the 1.0 of token 0.
         assert token.item() == 0
 
     def test_repetition_penalty_boosts_negative_logits(self) -> None:

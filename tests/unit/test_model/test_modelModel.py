@@ -1,10 +1,11 @@
 # tests/unit/test_model/test_modelModel.py
 """Tests for the model domain dataclasses."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from tinyModel import tinyModelConfig, tinyTrainingConfig
 
 from apps.modules.model.models.modelModel import (
     MODEL_PRESETS,
@@ -14,8 +15,6 @@ from apps.modules.model.models.modelModel import (
     TrainingConfig,
     TrainingResult,
 )
-
-from tinyModel import tinyModelConfig, tinyTrainingConfig
 
 
 class TestModelConfig:
@@ -79,7 +78,7 @@ class TestCheckpoint:
     """Checkpoint metadata serialization."""
 
     def test_dict_round_trip(self) -> None:
-        created = datetime(2026, 3, 4, 5, 6, 7, tzinfo=timezone.utc)
+        created = datetime(2026, 3, 4, 5, 6, 7, tzinfo=UTC)
         checkpoint = Checkpoint(
             id="ckpt-1",
             path=Path("data/checkpoints/ckpt-1.pt"),
@@ -107,7 +106,7 @@ class TestCheckpoint:
             epoch=0,
             loss=2.0,
             modelConfig=tinyModelConfig(),
-            createdAt=datetime.now(timezone.utc),
+            createdAt=datetime.now(UTC),
         )
         assert Checkpoint.fromDict(checkpoint.toDict()).valLoss is None
 

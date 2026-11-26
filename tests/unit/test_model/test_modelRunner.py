@@ -3,15 +3,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import torch
+from tinyModel import tinyGenerationOptions, tinyModelConfig
 
 from apps.modules.model.ml.modelRunner import ModelRunner
 from apps.modules.model.models.modelModel import Checkpoint, GenerationOptions
-
-from tinyModel import tinyGenerationOptions, tinyModelConfig
 
 
 class FakeTokenizer:
@@ -76,17 +75,13 @@ class TestGeneration:
     def test_stream_stops_on_eos(self) -> None:
         runner = _zeroedRunner(tinyModelConfig(eosTokenId=0))
         prompt = torch.randint(0, 64, (1, 2))
-        tokens = list(
-            runner.streamGenerate(prompt, tinyGenerationOptions(maxTokens=5))
-        )
+        tokens = list(runner.streamGenerate(prompt, tinyGenerationOptions(maxTokens=5)))
         assert tokens == [0]
 
     def test_stream_generates_up_to_max_tokens(self) -> None:
         runner = _zeroedRunner(tinyModelConfig(eosTokenId=63))
         prompt = torch.randint(0, 64, (1, 2))
-        tokens = list(
-            runner.streamGenerate(prompt, tinyGenerationOptions(maxTokens=5))
-        )
+        tokens = list(runner.streamGenerate(prompt, tinyGenerationOptions(maxTokens=5)))
         assert tokens == [0, 0, 0, 0, 0]
 
     def test_generate_returns_prompt_plus_tokens(self) -> None:
@@ -125,7 +120,7 @@ class TestCheckpoints:
             epoch=2,
             loss=1.0,
             modelConfig=config,
-            createdAt=datetime.now(timezone.utc),
+            createdAt=datetime.now(UTC),
         )
 
         prompt = torch.randint(0, config.vocabSize, (1, 4))
