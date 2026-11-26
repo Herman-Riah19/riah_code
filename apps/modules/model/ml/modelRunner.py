@@ -38,15 +38,15 @@ class ModelRunner:
         self._dtype = self._resolveDtype(config.dtype)
         self._tokenizer = tokenizer
 
-        model: torch.nn.Module = TransformerLM(config)
+        model = TransformerLM(config)
         model = model.to(self._device)
         model.eval()
         if config.compileMode is not None and hasattr(torch, "compile"):
-            model = torch.compile(model, mode=config.compileMode)
-        self._model = model
+            model = torch.compile(model, mode=config.compileMode)  # type: ignore[assignment]
+        self._model: TransformerLM = model
 
     @property
-    def model(self) -> torch.nn.Module:
+    def model(self) -> TransformerLM:
         """The underlying (possibly compiled) model."""
         return self._model
 
@@ -90,8 +90,9 @@ class ModelRunner:
         """Return the logits for a batch of token ids."""
         self._model.eval()
         with self._inferenceContext():
-            logits, _ = self._model(inputIds.to(self._device))
-        return logits
+            output = self._model(inputIds.to(self._device))
+            logits = output[0]
+        return logits  # type: ignore[no-any-return]
 
     def buildSampler(self, options: GenerationOptions) -> Sampler:
         """Create a sampler, resolving stop sequences through the tokenizer."""

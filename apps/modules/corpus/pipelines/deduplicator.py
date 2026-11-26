@@ -1,9 +1,10 @@
 # apps/modules/corpus/pipelines/deduplicator.py
 """Exact and near-duplicate detection using MinHash signatures with LSH banding."""
+
 from __future__ import annotations
 
 import hashlib
-from typing import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 
 from ..models.corpusModel import CleanDocument, DeduplicatorConfig
 
@@ -40,9 +41,11 @@ class Deduplicator:
         isNearDuplicate = False
         for bandIndex in range(self._bandsCount):
             start = bandIndex * self._rowsCount
-            bandSlice = tuple(signature[start:start + self._rowsCount])
+            bandSlice = tuple(signature[start : start + self._rowsCount])
             bandKey = int.from_bytes(
-                hashlib.blake2b(repr(bandSlice).encode("utf-8"), digest_size=HASH_SIZE_BYTES).digest(),
+                hashlib.blake2b(
+                    repr(bandSlice).encode("utf-8"), digest_size=HASH_SIZE_BYTES
+                ).digest(),
                 "little",
             )
             band = (bandIndex, bandKey)
@@ -93,6 +96,6 @@ class Deduplicator:
         if len(words) < size:
             return {text.encode("utf-8")}
         return {
-            " ".join(words[index:index + size]).encode("utf-8")
+            " ".join(words[index : index + size]).encode("utf-8")
             for index in range(len(words) - size + 1)
         }

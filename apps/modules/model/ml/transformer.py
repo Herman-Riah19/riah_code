@@ -1,5 +1,6 @@
 # apps/modules/model/ml/transformer.py
 """Decoder-only Transformer blocks and language model."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -54,9 +55,7 @@ class TransformerLM(nn.Module):
         super().__init__()
         self.config = config
         self.embedding = TokenEmbedding(config.vocabSize, config.dim)
-        self.blocks = nn.ModuleList(
-            [TransformerBlock(config) for _ in range(config.nLayers)]
-        )
+        self.blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.nLayers)])
         self.finalNorm = buildNormalization(config)
         self.lmHead: nn.Linear | None = None
         if not config.tieEmbeddings:
@@ -89,7 +88,7 @@ class TransformerLM(nn.Module):
     def _projectLogits(self, hiddenStates: torch.Tensor) -> torch.Tensor:
         """Project hidden states to vocabulary logits (tied head when enabled)."""
         if self.lmHead is not None:
-            return self.lmHead(hiddenStates)
+            return self.lmHead(hiddenStates)  # type: ignore[no-any-return]
         return F.linear(hiddenStates, self.embedding.embedding.weight)
 
     def forward(
@@ -120,9 +119,7 @@ class TransformerLM(nn.Module):
         nextCaches: list[KVCache] = []
         for index, block in enumerate(self.blocks):
             pastKeyValue = pastKeyValues[index] if pastKeyValues is not None else None
-            hiddenStates, cache = block(
-                hiddenStates, pastKeyValue=pastKeyValue, useCache=True
-            )
+            hiddenStates, cache = block(hiddenStates, pastKeyValue=pastKeyValue, useCache=True)
             if cache is None:  # pragma: no cover - defensive
                 raise RuntimeError("attention block did not return a KV cache")
             nextCaches.append(cache)

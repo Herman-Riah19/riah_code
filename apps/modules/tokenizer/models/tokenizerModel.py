@@ -1,5 +1,6 @@
 # apps/modules/tokenizer/models/tokenizerModel.py
 """Tokenizer Module - Domain models, BPE wrapper and HTTP schemas."""
+
 from __future__ import annotations
 
 import hashlib
@@ -7,7 +8,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 from tokenizers import Tokenizer as HFTokenizer
@@ -103,7 +104,7 @@ class BPETokenizer:
     def __init__(self, tokenizerPath: Path) -> None:
         self._tokenizerPath = tokenizerPath
         self._hfTokenizer = HFTokenizer.from_file(str(tokenizerPath))
-        self._vocab = self._hfTokenizer.get_vocab()
+        self._vocab = cast("dict[str, int]", self._hfTokenizer.get_vocab())
         self._idToToken = {tokenId: token for token, tokenId in self._vocab.items()}
         self._eosId = self._requireSpecialToken("<|endoftext|>")
         self._padId = self._requireSpecialToken("<|pad|>")
@@ -167,12 +168,10 @@ class BPETokenizer:
         if padding:
             longest = max((len(sequence) for sequence in tokenIds), default=0)
             attentionMask = [
-                [1] * len(sequence) + [0] * (longest - len(sequence))
-                for sequence in tokenIds
+                [1] * len(sequence) + [0] * (longest - len(sequence)) for sequence in tokenIds
             ]
             tokenIds = [
-                sequence + [self._padId] * (longest - len(sequence))
-                for sequence in tokenIds
+                sequence + [self._padId] * (longest - len(sequence)) for sequence in tokenIds
             ]
         else:
             attentionMask = [[1] * len(sequence) for sequence in tokenIds]
@@ -181,9 +180,12 @@ class BPETokenizer:
 
     def decode(self, tokenIds: list[int], skipSpecialTokens: bool = True) -> str:
         """Decode token ids back into text."""
-        return self._hfTokenizer.decode(
-            tokenIds,
-            skip_special_tokens=skipSpecialTokens,
+        return cast(
+            "str",
+            self._hfTokenizer.decode(
+                tokenIds,
+                skip_special_tokens=skipSpecialTokens,
+            ),
         )
 
     def decodeBatch(
@@ -193,8 +195,7 @@ class BPETokenizer:
     ) -> list[str]:
         """Decode several sequences back into text."""
         return [
-            self.decode(tokenIds, skipSpecialTokens=skipSpecialTokens)
-            for tokenIds in tokenIdsList
+            self.decode(tokenIds, skipSpecialTokens=skipSpecialTokens) for tokenIds in tokenIdsList
         ]
 
     def tokenToId(self, token: str) -> int | None:
@@ -209,9 +210,7 @@ class BPETokenizer:
         """Return every (token, id) pair of the vocabulary, sorted by id."""
         return [
             {"token": token, "tokenId": tokenId}
-            for token, tokenId in sorted(
-                self._vocab.items(), key=lambda item: item[1]
-            )
+            for token, tokenId in sorted(self._vocab.items(), key=lambda item: item[1])
         ]
 
 

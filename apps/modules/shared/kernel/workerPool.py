@@ -1,9 +1,11 @@
 # apps/modules/shared/kernel/workerPool.py
 """Bounded thread pool used to run background jobs."""
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable
+from typing import Any
 
 
 class WorkerPool:

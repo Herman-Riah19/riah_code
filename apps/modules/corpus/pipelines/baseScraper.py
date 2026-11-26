@@ -1,5 +1,6 @@
 # apps/modules/corpus/pipelines/baseScraper.py
 """Abstract contract implemented by every corpus source scraper."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

@@ -1,9 +1,10 @@
 # apps/modules/tokenizer/pipelines/corpusEncoder.py
 """Encode clean documents into uint16 token shards indexed by document."""
+
 from __future__ import annotations
 
 import time
-from typing import Iterable, Iterator
+from collections.abc import Iterable, Iterator
 
 from apps.modules.corpus.models.corpusModel import CleanDocument
 from apps.modules.corpus.pipelines.shardWriter import ShardWriter

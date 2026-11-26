@@ -64,6 +64,11 @@ class TokenizerNotFoundError(ResourceNotFoundError):
     errorCode = "TOKENIZER_NOT_FOUND"
 
 
-class CancellationException(RiahAppError):
+class CancellationException(RiahAppError):  # noqa: N818 - name kept for the PRD contract
     statusCode = 499
     errorCode = "CANCELLED"
+
+
+class RateLimitError(RiahAppError):
+    statusCode = 429
+    errorCode = "RATE_LIMITED"

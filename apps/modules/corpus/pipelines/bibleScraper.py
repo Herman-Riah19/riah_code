@@ -5,6 +5,7 @@ Bible chapters are downloaded from the public-domain datasets maintained by
 the ``scrollmapper/bible_databases`` project on GitHub. Each chapter becomes
 one raw document and is later exported as a standalone markdown file.
 """
+
 from __future__ import annotations
 
 import json
@@ -118,8 +119,7 @@ class BibleScraper(HttpScraper):
             for chapter in book.get("chapters", []):
                 chapterNumber = int(chapter.get("chapter", 0))
                 verseTexts = [
-                    str(verse.get("text", "")).strip()
-                    for verse in chapter.get("verses", [])
+                    str(verse.get("text", "")).strip() for verse in chapter.get("verses", [])
                 ]
                 content = " ".join(text for text in verseTexts if text)
                 if len(content) < self._config.minArticleLength:
@@ -148,7 +148,7 @@ class BibleScraper(HttpScraper):
         except json.JSONDecodeError as error:
             raise ValueError(f"Reponse JSON invalide pour {url}: {error}") from error
         if not isinstance(decoded, dict):
-            raise ValueError(f"Structure inattendue pour {url}")
+            raise TypeError(f"Structure inattendue pour {url}")
         return decoded
 
     @staticmethod

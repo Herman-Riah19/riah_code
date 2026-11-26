@@ -3,7 +3,7 @@
 
 from .attention import KVCache, MultiHeadAttention
 from .embedding import RotaryEmbedding, TokenEmbedding, applyRotaryEmbedding
-from .feedForward import GELUMlp, GeGLU, SwiGLU, buildFeedForward
+from .feedForward import GeGLU, GELUMlp, SwiGLU, buildFeedForward
 from .loss import crossEntropyLoss, perplexity
 from .modelRunner import ModelRunner
 from .normalization import LayerNormBlock, RMSNorm, buildNormalization

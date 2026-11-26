@@ -1,5 +1,6 @@
 # apps/modules/model/models/modelModel.py
 """Model domain models - architecture, training, checkpoints and generation."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields, replace
@@ -69,9 +70,7 @@ class ModelConfig:
     def headDim(self) -> int:
         """Dimension of a single attention head."""
         if self.dim % self.nHeads != 0:
-            raise ValueError(
-                f"dim ({self.dim}) must be divisible by nHeads ({self.nHeads})"
-            )
+            raise ValueError(f"dim ({self.dim}) must be divisible by nHeads ({self.nHeads})")
         return self.dim // self.nHeads
 
     @property
@@ -245,9 +244,7 @@ class Checkpoint:
             "loss": self.loss,
             "valLoss": self.valLoss,
             "modelConfig": self.modelConfig.toDict(),
-            "trainingConfig": (
-                self.trainingConfig.toDict() if self.trainingConfig else None
-            ),
+            "trainingConfig": (self.trainingConfig.toDict() if self.trainingConfig else None),
             "createdAt": self.createdAt.isoformat(),
             "isBest": self.isBest,
             "modelName": self.modelName,
@@ -379,9 +376,7 @@ class TrainingStartRequest(BaseModel):
     def _validatePreset(cls, value: str) -> str:
         """Reject unknown architecture presets early."""
         if value not in MODEL_PRESETS:
-            raise ValueError(
-                f"preset inconnu: {value} (disponibles: {sorted(MODEL_PRESETS)})"
-            )
+            raise ValueError(f"preset inconnu: {value} (disponibles: {sorted(MODEL_PRESETS)})")
         return value
 
     def toModelConfig(self) -> ModelConfig:

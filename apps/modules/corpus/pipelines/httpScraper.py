@@ -1,5 +1,6 @@
 # apps/modules/corpus/pipelines/httpScraper.py
 """Small JSON-over-HTTP client shared by API based scrapers."""
+
 from __future__ import annotations
 
 import json
@@ -7,7 +8,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, cast
 
 from ...shared.kernel.exceptions import RiahAppError
 from .baseScraper import BaseScraper
@@ -29,7 +30,10 @@ class HttpScraper(BaseScraper):
         )
         try:
             with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+                payload = cast(
+                    "dict[str, Any]",
+                    json.loads(response.read().decode("utf-8")),
+                )
         except (urllib.error.URLError, json.JSONDecodeError) as error:
             raise RiahAppError(
                 f"Requete HTTP echouee: {url}",
@@ -60,7 +64,7 @@ class HttpScraper(BaseScraper):
         fallback = encodings[-1] if encodings else "utf-8"
         for encoding in encodings:
             try:
-                return raw.decode(encoding)
+                return cast("str", raw.decode(encoding))
             except UnicodeDecodeError:
                 continue
-        return raw.decode(fallback, errors="replace")
+        return cast("str", raw.decode(fallback, errors="replace"))

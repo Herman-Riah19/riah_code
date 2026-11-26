@@ -1,10 +1,11 @@
 # apps/modules/tokenizer/pipelines/tokenizerTrainer.py
 """Train a byte-level BPE tokenizer on clean corpus texts."""
+
 from __future__ import annotations
 
+from collections.abc import Iterable
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
-from typing import Iterable
+from datetime import UTC, datetime
 
 from tokenizers import Tokenizer, decoders, models, pre_tokenizers, processors, trainers
 from tokenizers.normalizers import NFKC, Sequence
@@ -33,9 +34,7 @@ class TokenizerTrainer:
             add_prefix_space=self._config.addPrefixSpace
         )
         tokenizer.decoder = decoders.ByteLevel()
-        tokenizer.post_processor = processors.ByteLevel(
-            trim_offsets=self._config.trimWhitespace
-        )
+        tokenizer.post_processor = processors.ByteLevel(trim_offsets=self._config.trimWhitespace)
         return tokenizer
 
     def train(self, corpusIterator: Iterable[str]) -> VocabInfo:
@@ -62,9 +61,7 @@ class TokenizerTrainer:
     def _computeVocabInfo(self, texts: list[str]) -> VocabInfo:
         vocab = self._hfTokenizer.get_vocab()
         specialTokenIds = {
-            token: vocab[token]
-            for token in self._config.specialTokens
-            if token in vocab
+            token: vocab[token] for token in self._config.specialTokens if token in vocab
         }
 
         encodedSequences = self._encodeAll(texts)
@@ -74,10 +71,7 @@ class TokenizerTrainer:
 
         unkTokenId = specialTokenIds.get("<|unk|>")
         oovCount = sum(
-            1
-            for sequence in encodedSequences
-            for tokenId in sequence
-            if tokenId == unkTokenId
+            1 for sequence in encodedSequences for tokenId in sequence if tokenId == unkTokenId
         )
         oovRate = oovCount / totalTokens if totalTokens else 0.0
 
@@ -86,7 +80,7 @@ class TokenizerTrainer:
             specialTokenIds=specialTokenIds,
             compressionRatio=compressionRatio,
             oovRate=oovRate,
-            trainedAt=datetime.now(timezone.utc),
+            trainedAt=datetime.now(UTC),
             configHash=self._config.configHash(),
         )
 

@@ -1,5 +1,6 @@
 # apps/modules/model/ml/embedding.py
 """Token embedding and rotary position encoding (RoPE)."""
+
 from __future__ import annotations
 
 import torch
@@ -15,7 +16,7 @@ class TokenEmbedding(nn.Module):
 
     def forward(self, tokenIds: torch.Tensor) -> torch.Tensor:
         """Return the embedding of each token id."""
-        return self.embedding(tokenIds)
+        return self.embedding(tokenIds)  # type: ignore[no-any-return]
 
 
 class RotaryEmbedding(nn.Module):
@@ -47,6 +48,8 @@ class RotaryEmbedding(nn.Module):
         embeddings = torch.cat((frequencies, frequencies), dim=-1)
         self.register_buffer("cosTable", embeddings.cos(), persistent=False)
         self.register_buffer("sinTable", embeddings.sin(), persistent=False)
+        self.cosTable: torch.Tensor
+        self.sinTable: torch.Tensor
 
     def forward(
         self,
@@ -58,9 +61,7 @@ class RotaryEmbedding(nn.Module):
         """Return `(cos, sin)` tables of shape `(seqLen, headDim)`."""
         end = offset + seqLen
         if end > self.maxSeqLen:
-            raise ValueError(
-                f"Sequence length {end} exceeds RoPE cache ({self.maxSeqLen})"
-            )
+            raise ValueError(f"Sequence length {end} exceeds RoPE cache ({self.maxSeqLen})")
         cos = self.cosTable[offset:end]
         sin = self.sinTable[offset:end]
         if device is not None or dtype is not None:

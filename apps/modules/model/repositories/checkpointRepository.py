@@ -1,9 +1,10 @@
 # apps/modules/model/repositories/checkpointRepository.py
 """Checkpoint repository - `.pt` files indexed in SQLite."""
+
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -142,8 +143,7 @@ class CheckpointRepository:
         """Return the checkpoint flagged as best (lowest validation loss)."""
         if modelName is None:
             row = self._db.fetchOne(
-                "SELECT * FROM checkpoints WHERE isBest = 1 "
-                "ORDER BY step DESC LIMIT 1"
+                "SELECT * FROM checkpoints WHERE isBest = 1 ORDER BY step DESC LIMIT 1"
             )
         else:
             row = self._db.fetchOne(
@@ -164,8 +164,7 @@ class CheckpointRepository:
             return []
         if modelName is None:
             rows = self._db.fetchAll(
-                "SELECT * FROM checkpoints ORDER BY step DESC, createdAt DESC "
-                "LIMIT ? OFFSET ?",
+                "SELECT * FROM checkpoints ORDER BY step DESC, createdAt DESC LIMIT ? OFFSET ?",
                 (limit, max(0, offset)),
             )
         else:
@@ -201,8 +200,7 @@ class CheckpointRepository:
         if keepLastN < 0:
             raise ValueError("keepLastN must be >= 0")
         keepIds = [
-            checkpoint.id
-            for checkpoint in self.listAll(limit=keepLastN, modelName=modelName)
+            checkpoint.id for checkpoint in self.listAll(limit=keepLastN, modelName=modelName)
         ]
         if protectBest:
             best = self.findBest(modelName=modelName)
@@ -247,7 +245,7 @@ class CheckpointRepository:
         """Map a SQLite row to a domain `Checkpoint`."""
         createdAt = datetime.fromisoformat(row["createdAt"])
         if createdAt.tzinfo is None:
-            createdAt = createdAt.replace(tzinfo=timezone.utc)
+            createdAt = createdAt.replace(tzinfo=UTC)
         payload = {
             "id": row["id"],
             "path": row["path"],

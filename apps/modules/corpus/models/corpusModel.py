@@ -1,13 +1,14 @@
 # apps/modules/corpus/models/corpusModel.py
 """Corpus Module - Domain Models"""
+
 from __future__ import annotations
 
 import hashlib
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -49,7 +50,7 @@ class RawDocument:
             language=language,
             text=text,
             metadata=metadata,
-            scrapedAt=datetime.now(timezone.utc),
+            scrapedAt=datetime.now(UTC),
         )
 
     def toDict(self) -> dict[str, Any]:
@@ -237,7 +238,7 @@ class HtmlCleanerConfig:
 class TextNormalizerConfig:
     """Text normalization options."""
 
-    unicodeForm: str = "NFC"
+    unicodeForm: Literal["NFC", "NFD", "NFKC", "NFKD"] = "NFC"
     fixMojibake: bool = True
     collapseWhitespace: bool = True
     removeControlChars: bool = True

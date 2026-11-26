@@ -1,9 +1,10 @@
 # apps/modules/corpus/pipelines/wikiScraper.py
 """Wikipedia scraper: REST API extraction or Wikimedia XML dump parsing."""
+
 from __future__ import annotations
 
 import time
-import xml.etree.ElementTree as ElementTree
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from ...shared.kernel.exceptions import RiahAppError, ValidationError
@@ -105,7 +106,7 @@ class WikiScraper(HttpScraper):
         batch: list[RawDocument] = []
         language = self._config.languages[0]
 
-        for _, element in ElementTree.iterparse(dumpPath, events=("end",)):
+        for _, element in ET.iterparse(dumpPath, events=("end",)):
             if not element.tag.endswith("page"):
                 continue
             title = element.findtext("{*}title", default="")

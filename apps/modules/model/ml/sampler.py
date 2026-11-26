@@ -1,5 +1,6 @@
 # apps/modules/model/ml/sampler.py
 """Token sampling strategies (temperature, top-k, top-p, repetition penalty)."""
+
 from __future__ import annotations
 
 import torch

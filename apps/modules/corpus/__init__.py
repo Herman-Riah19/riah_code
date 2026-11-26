@@ -1,6 +1,7 @@
 # apps/modules/corpus/__init__.py
 """Corpus Module - Data scraping, cleaning, and preparation."""
 
+from .controllers.corpusController import CorpusContainer, corpusBlueprint
 from .models.corpusModel import (
     BibleScraperConfig,
     CleanDocument,
@@ -26,7 +27,6 @@ from .pipelines.pipelineOrchestrator import PipelineOrchestrator
 from .pipelines.valtortaScraper import ValtortaScraper
 from .repositories.corpusRepository import CorpusRepository
 from .services.corpusService import CorpusService
-from .controllers.corpusController import CorpusContainer, corpusBlueprint
 
 __all__ = [
     "BibleScraperConfig",

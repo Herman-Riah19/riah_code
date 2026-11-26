@@ -84,7 +84,13 @@ def validateParams(schema: type[BaseModel]) -> Callable[[ViewFunction], Validate
                     "Paramètres d'URL invalides",
                     details=_validationDetails(error),
                 ) from None
-            return func(validated, *args, **kwargs)
+            # Path parameters are already carried by the validated model.
+            remaining = {
+                key: value
+                for key, value in kwargs.items()
+                if key not in type(validated).model_fields
+            }
+            return func(validated, *args, **remaining)
 
         return wrapper
 

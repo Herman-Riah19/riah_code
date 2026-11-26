@@ -1,11 +1,12 @@
 # apps/modules/corpus/pipelines/shardWriter.py
 """Write token shards as uint16 binaries with a JSONL document index."""
+
 from __future__ import annotations
 
 import json
 from array import array
+from collections.abc import Callable, Iterable, Sequence
 from pathlib import Path
-from typing import Callable, Iterable, Sequence
 
 from ..models.corpusModel import CleanDocument, ShardInfo
 
@@ -28,9 +29,7 @@ class _ShardBuffer:
             return
         offset = len(self.tokenIds)
         self.tokenIds.extend(tokenIds)
-        self.entries.append(
-            {"documentId": document.id, "offset": offset, "length": len(tokenIds)}
-        )
+        self.entries.append({"documentId": document.id, "offset": offset, "length": len(tokenIds)})
         self.languages.add(document.language)
 
     def isEmpty(self) -> bool:

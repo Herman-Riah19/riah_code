@@ -1,5 +1,6 @@
 # apps/modules/model/ml/normalization.py
 """Normalization layers used by the Transformer blocks."""
+
 from __future__ import annotations
 
 import torch
@@ -38,7 +39,7 @@ class LayerNormBlock(nn.Module):
 
     def forward(self, hiddenStates: torch.Tensor) -> torch.Tensor:
         """Normalize the last dimension."""
-        return self.norm(hiddenStates)
+        return self.norm(hiddenStates)  # type: ignore[no-any-return]
 
 
 def buildNormalization(config: ModelConfig) -> nn.Module:

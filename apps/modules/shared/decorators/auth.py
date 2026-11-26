@@ -1,33 +1,55 @@
 # apps/modules/shared/decorators/auth.py
-"""Authentication decorators"""
+"""Authentication decorators."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass
 from functools import wraps
-from flask import request, g
-from apps.modules.shared.kernel.exceptions import UnauthorizedError, ForbiddenError
+from typing import Any
+
+from flask import g, request
+
 from apps.modules.shared.config import settings
+from apps.modules.shared.kernel.exceptions import ForbiddenError, UnauthorizedError
+
+ViewFunction = Callable[..., Any]
 
 
-def requireAuth(func):
-    """Decorator to require valid authentication token"""
+@dataclass(frozen=True)
+class AuthenticatedUser:
+    """Minimal user identity propagated to view functions."""
+
+    id: str
+    role: str
+    email: str
+
+
+def requireAuth(func: ViewFunction) -> ViewFunction:
+    """Require a valid bearer token and inject the user as first argument."""
+
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         authHeader = request.headers.get("Authorization")
         if not authHeader or not authHeader.startswith("Bearer "):
             raise UnauthorizedError("Token manquant ou invalide")
-        
+
         token = authHeader[7:]  # Remove "Bearer "
         user = _validateToken(token)
         if not user:
             raise UnauthorizedError("Token invalide ou expiré")
-        
+
         g.currentUser = user
         return func(user, *args, **kwargs)
+
     return wrapper
 
 
-def optionalAuth(func):
-    """Decorator for optional authentication"""
+def optionalAuth(func: ViewFunction) -> ViewFunction:
+    """Inject the user when a valid token is present, otherwise None."""
+
     @wraps(func)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         authHeader = request.headers.get("Authorization")
         user = None
         if authHeader and authHeader.startswith("Bearer "):
@@ -35,28 +57,31 @@ def optionalAuth(func):
             user = _validateToken(token)
         g.currentUser = user
         return func(user, *args, **kwargs)
+
     return wrapper
 
 
-def requireRole(*roles: str):
-    """Decorator to require specific role(s)"""
-    def decorator(func):
+def requireRole(*roles: str) -> Callable[[ViewFunction], ViewFunction]:
+    """Require the injected user to own one of the given roles."""
+
+    def decorator(func: ViewFunction) -> ViewFunction:
         @wraps(func)
-        def wrapper(user, *args, **kwargs):
+        def wrapper(user: AuthenticatedUser | None, *args: Any, **kwargs: Any) -> Any:
             if not user:
                 raise UnauthorizedError("Authentification requise")
             userRole = getattr(user, "role", "user")
             if userRole not in roles:
                 raise ForbiddenError(f"Rôle requis: {', '.join(roles)}")
             return func(user, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
-def _validateToken(token: str):
-    """Validate JWT token - implement your logic here"""
+def _validateToken(token: str) -> AuthenticatedUser | None:
+    """Validate a JWT token - mock implementation for development."""
     # TODO: Implement JWT validation with PyJWT
-    # For now, return mock user for development
     if settings.debug and token == "dev-token":
-        return type("User", (), {"id": "dev-user", "role": "admin", "email": "dev@local"})()
+        return AuthenticatedUser(id="dev-user", role="admin", email="dev@local")
     return None

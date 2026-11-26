@@ -1,17 +1,18 @@
 # apps/modules/shared/kernel/__init__.py
+from .events import DomainEvent, EventBus, EventTypes, eventBus
 from .exceptions import (
-    RiahAppError,
-    ResourceNotFoundError,
-    ValidationError,
-    UnauthorizedError,
+    CancellationException,
+    CheckpointNotFoundError,
     ForbiddenError,
     InvalidJobStateError,
-    CheckpointNotFoundError,
     NoModelAvailableError,
+    RateLimitError,
+    ResourceNotFoundError,
+    RiahAppError,
     TokenizerNotFoundError,
-    CancellationException,
+    UnauthorizedError,
+    ValidationError,
 )
-from .events import DomainEvent, EventBus, eventBus, EventTypes
 
 __all__ = [
     "RiahAppError",
@@ -24,6 +25,7 @@ __all__ = [
     "NoModelAvailableError",
     "TokenizerNotFoundError",
     "CancellationException",
+    "RateLimitError",
     "DomainEvent",
     "EventBus",
     "eventBus",

@@ -1,12 +1,13 @@
 # apps/modules/corpus/pipelines/pipelineOrchestrator.py
 """Orchestrate the full corpus pipeline: scrape, clean, filter, dedup, shard, index."""
+
 from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 from ...shared.kernel.exceptions import ValidationError
 from ..models.corpusModel import (
@@ -137,7 +138,7 @@ class PipelineOrchestrator:
                 text=cleanedText,
                 qualityScore=self._qualityFilter.score(cleanedText, rawDocument.language),
                 tokenCount=len(cleanedText.split()),
-                cleanedAt=datetime.now(timezone.utc),
+                cleanedAt=datetime.now(UTC),
             )
             counters["documentsCleaned"] += 1
 
@@ -177,7 +178,7 @@ class PipelineOrchestrator:
                 {
                     "step": step,
                     "payload": payload,
-                    "savedAt": datetime.now(timezone.utc).isoformat(),
+                    "savedAt": datetime.now(UTC).isoformat(),
                 },
                 ensure_ascii=False,
                 indent=2,

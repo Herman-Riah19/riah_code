@@ -1,13 +1,14 @@
 # apps/modules/corpus/repositories/corpusRepository.py
 """Corpus repository - local JSONL(gzip) files plus a SQLite shard index."""
+
 from __future__ import annotations
 
 import json
 import random
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import ExitStack
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Callable, Iterable, Iterator
 
 from apps.modules.shared.storage.fileStorage import FileStorage
 from apps.modules.shared.storage.sqliteStorage import SQLiteStorage
@@ -61,7 +62,7 @@ class CorpusRepository:
 
     @staticmethod
     def _dayPartition() -> str:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return datetime.now(UTC).strftime("%Y-%m-%d")
 
     def saveRaw(self, docs: list[RawDocument]) -> int:
         """Append raw documents as gzipped JSONL, partitioned by source and day."""
@@ -104,9 +105,7 @@ class CorpusRepository:
                 writer = writers.get(document.language)
                 if writer is None:
                     filePath = (
-                        self._cleanDir
-                        / document.language
-                        / f"{self._dayPartition()}{JSONL_SUFFIX}"
+                        self._cleanDir / document.language / f"{self._dayPartition()}{JSONL_SUFFIX}"
                     )
                     writer = stack.enter_context(
                         self._cleanStorage.writeJsonl(
@@ -272,7 +271,7 @@ class CorpusRepository:
                     languages=sorted({filePath.parent.name for filePath in files}),
                     documentCount=len(files),
                     totalSizeBytes=sum(stat.st_size for stat in stats),
-                    updatedAt=datetime.fromtimestamp(latestMtime, tz=timezone.utc),
+                    updatedAt=datetime.fromtimestamp(latestMtime, tz=UTC),
                     path=str(sourceDir[source] / source),
                 )
             )

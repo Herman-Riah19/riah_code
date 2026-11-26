@@ -1,5 +1,6 @@
 # apps/modules/model/ml/attention.py
 """Causal multi-head attention with optional grouped-query and KV cache."""
+
 from __future__ import annotations
 
 import math
@@ -29,18 +30,10 @@ class MultiHeadAttention(nn.Module):
         self.dropoutP = config.attnDropout
         self.attnImpl = config.attnImpl
 
-        self.qProj = nn.Linear(
-            config.dim, self.nHeads * self.headDim, bias=config.useBias
-        )
-        self.kProj = nn.Linear(
-            config.dim, self.nKvHeads * self.headDim, bias=config.useBias
-        )
-        self.vProj = nn.Linear(
-            config.dim, self.nKvHeads * self.headDim, bias=config.useBias
-        )
-        self.oProj = nn.Linear(
-            self.nHeads * self.headDim, config.dim, bias=config.useBias
-        )
+        self.qProj = nn.Linear(config.dim, self.nHeads * self.headDim, bias=config.useBias)
+        self.kProj = nn.Linear(config.dim, self.nKvHeads * self.headDim, bias=config.useBias)
+        self.vProj = nn.Linear(config.dim, self.nKvHeads * self.headDim, bias=config.useBias)
+        self.oProj = nn.Linear(self.nHeads * self.headDim, config.dim, bias=config.useBias)
 
         self.rope: RotaryEmbedding | None = None
         if config.useRoPE:
@@ -65,19 +58,23 @@ class MultiHeadAttention(nn.Module):
         pastLen = pastKeyValue[0].shape[2] if pastKeyValue is not None else 0
         totalLen = pastLen + seqLen
         if totalLen > (self.rope.maxSeqLen if self.rope else totalLen):
-            raise ValueError(
-                f"Sequence length {totalLen} exceeds the model context window"
-            )
+            raise ValueError(f"Sequence length {totalLen} exceeds the model context window")
 
-        query = self.qProj(hiddenStates).view(
-            batchSize, seqLen, self.nHeads, self.headDim
-        ).transpose(1, 2)
-        key = self.kProj(hiddenStates).view(
-            batchSize, seqLen, self.nKvHeads, self.headDim
-        ).transpose(1, 2)
-        value = self.vProj(hiddenStates).view(
-            batchSize, seqLen, self.nKvHeads, self.headDim
-        ).transpose(1, 2)
+        query = (
+            self.qProj(hiddenStates)
+            .view(batchSize, seqLen, self.nHeads, self.headDim)
+            .transpose(1, 2)
+        )
+        key = (
+            self.kProj(hiddenStates)
+            .view(batchSize, seqLen, self.nKvHeads, self.headDim)
+            .transpose(1, 2)
+        )
+        value = (
+            self.vProj(hiddenStates)
+            .view(batchSize, seqLen, self.nKvHeads, self.headDim)
+            .transpose(1, 2)
+        )
 
         if self.rope is not None:
             cos, sin = self.rope(
@@ -102,8 +99,10 @@ class MultiHeadAttention(nn.Module):
 
         attentionMask = self._buildCausalMask(seqLen, pastLen, totalLen, hiddenStates.device)
         attended = self._attend(query, key, value, attentionMask, pastLen)
-        attended = attended.transpose(1, 2).contiguous().view(
-            batchSize, seqLen, self.nHeads * self.headDim
+        attended = (
+            attended.transpose(1, 2)
+            .contiguous()
+            .view(batchSize, seqLen, self.nHeads * self.headDim)
         )
         return self.oProj(attended), nextCache
 
@@ -117,9 +116,7 @@ class MultiHeadAttention(nn.Module):
     ) -> torch.Tensor:
         """Run scaled dot-product attention, preferring PyTorch SDPA."""
         dropoutP = self.dropoutP if self.training else 0.0
-        if self.attnImpl in {"sdpa", "flash"} and hasattr(
-            F, "scaled_dot_product_attention"
-        ):
+        if self.attnImpl in {"sdpa", "flash"} and hasattr(F, "scaled_dot_product_attention"):
             if attentionMask is None:
                 return F.scaled_dot_product_attention(
                     query,

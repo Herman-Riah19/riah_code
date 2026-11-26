@@ -2,19 +2,20 @@
 """Shared Kernel - Cross-cutting concerns"""
 
 from .config import Settings
+from .kernel.events import DomainEvent, EventBus
 from .kernel.exceptions import (
-    RiahAppError,
-    ResourceNotFoundError,
-    ValidationError,
-    UnauthorizedError,
+    CancellationException,
+    CheckpointNotFoundError,
     ForbiddenError,
     InvalidJobStateError,
-    CheckpointNotFoundError,
     NoModelAvailableError,
+    RateLimitError,
+    ResourceNotFoundError,
+    RiahAppError,
     TokenizerNotFoundError,
-    CancellationException,
+    UnauthorizedError,
+    ValidationError,
 )
-from .kernel.events import DomainEvent, EventBus
 
 __all__ = [
     "Settings",
@@ -28,6 +29,7 @@ __all__ = [
     "NoModelAvailableError",
     "TokenizerNotFoundError",
     "CancellationException",
+    "RateLimitError",
     "DomainEvent",
     "EventBus",
 ]

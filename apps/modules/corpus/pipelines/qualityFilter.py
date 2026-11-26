@@ -1,5 +1,6 @@
 # apps/modules/corpus/pipelines/qualityFilter.py
 """Heuristic quality scoring and filtering for clean documents."""
+
 from __future__ import annotations
 
 import re

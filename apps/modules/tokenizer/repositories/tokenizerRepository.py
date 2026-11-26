@@ -1,5 +1,6 @@
 # apps/modules/tokenizer/repositories/tokenizerRepository.py
 """Tokenizer repository - local `tokenizer.json` and `vocab_info.json` files."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -49,9 +50,7 @@ class TokenizerRepository:
                 details={"path": str(self._tokenizerPath)},
             )
         tokenizer = BPETokenizer(self._tokenizerPath)
-        vocabInfo = VocabInfo.fromJson(
-            self._vocabInfoPath.read_text(encoding="utf-8")
-        )
+        vocabInfo = VocabInfo.fromJson(self._vocabInfoPath.read_text(encoding="utf-8"))
         return tokenizer, vocabInfo
 
     def exists(self) -> bool:

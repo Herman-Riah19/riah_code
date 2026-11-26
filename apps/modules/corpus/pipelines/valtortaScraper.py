@@ -6,6 +6,7 @@ The website publishes each tome as an ``index.htm`` table of contents plus one
 HTML page per chapter. Chapter pages are windows-1252 encoded and wrap their
 content in ``<p>`` elements.
 """
+
 from __future__ import annotations
 
 import re
@@ -37,7 +38,6 @@ NAVIGATION_PARAGRAPHS = frozenset(
         "Consulter la Bible en ligne",
         "Aller sur le forum partage",
         "Aller sur le forum partagé",
-        "Qui sommes-nous ?",
         "Qui sommes-nous ?",
     }
 )

@@ -1,5 +1,6 @@
 # apps/modules/tokenizer/controllers/tokenizerController.py
 """Tokenizer HTTP controller and lazy composition root."""
+
 from __future__ import annotations
 
 from typing import Any

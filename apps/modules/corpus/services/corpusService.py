@@ -1,10 +1,12 @@
 # apps/modules/corpus/services/corpusService.py
 """Corpus service - job lifecycle around the pipeline orchestrator."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from ...shared.kernel.exceptions import ResourceNotFoundError
 from ...shared.kernel.job import Job, JobRepository, JobStatus, JobType
@@ -63,7 +65,7 @@ class CorpusService:
             return
 
         job.status = JobStatus.RUNNING
-        job.startedAt = datetime.now(timezone.utc)
+        job.startedAt = datetime.now(UTC)
         self._jobRepo.save(job)
         try:
             config = self._configFromJob(job)
@@ -79,7 +81,7 @@ class CorpusService:
             job.status = JobStatus.FAILED
             job.error = str(error)
         finally:
-            job.finishedAt = datetime.now(timezone.utc)
+            job.finishedAt = datetime.now(UTC)
             self._jobRepo.save(job)
 
     @staticmethod

@@ -1,5 +1,6 @@
 # apps/modules/corpus/pipelines/textNormalizer.py
 """Unicode, whitespace and control character normalization."""
+
 from __future__ import annotations
 
 import re

@@ -1,5 +1,6 @@
 # apps/modules/corpus/pipelines/htmlCleaner.py
 """Convert HTML pages to plain text without third-party dependencies."""
+
 from __future__ import annotations
 
 from html.parser import HTMLParser

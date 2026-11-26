@@ -1,5 +1,6 @@
 # apps/modules/corpus/controllers/corpusController.py
 """Corpus HTTP controller and lazy composition root."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -206,9 +207,7 @@ def getCorpusStats(user: Any) -> Any:
 @requireAuth
 def listCorpusDatasets(user: Any) -> Any:
     """List exported `.md` corpora grouped by source."""
-    datasets = CorpusContainer.getCorpusRepository().listMarkdownCorpora(
-        [settings.bibleDir]
-    )
+    datasets = CorpusContainer.getCorpusRepository().listMarkdownCorpora([settings.bibleDir])
     return jsonify({"datasets": [dataset.toDict() for dataset in datasets]})
 
 

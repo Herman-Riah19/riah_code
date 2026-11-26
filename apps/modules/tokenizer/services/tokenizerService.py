@@ -1,8 +1,9 @@
 # apps/modules/tokenizer/services/tokenizerService.py
 """Tokenizer service - job lifecycle for BPE training and corpus encoding."""
+
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -174,7 +175,7 @@ class TokenizerService:
             job.status = JobStatus.FAILED
             job.error = str(error)
         finally:
-            job.finishedAt = datetime.now(timezone.utc)
+            job.finishedAt = datetime.now(UTC)
             self._jobRepo.save(job)
 
     def _runCorpusEncoding(
@@ -201,7 +202,7 @@ class TokenizerService:
             job.status = JobStatus.FAILED
             job.error = str(error)
         finally:
-            job.finishedAt = datetime.now(timezone.utc)
+            job.finishedAt = datetime.now(UTC)
             self._jobRepo.save(job)
 
     def _startJob(self, jobId: str) -> Job | None:
@@ -209,7 +210,7 @@ class TokenizerService:
         if job is None:
             return None
         job.status = JobStatus.RUNNING
-        job.startedAt = datetime.now(timezone.utc)
+        job.startedAt = datetime.now(UTC)
         self._jobRepo.save(job)
         return job
 
