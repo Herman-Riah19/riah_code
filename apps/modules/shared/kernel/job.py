@@ -6,12 +6,12 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from threading import RLock
 from typing import Any
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     """Lifecycle states of a background job."""
 
     PENDING = "pending"
@@ -21,7 +21,7 @@ class JobStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class JobType(str, Enum):
+class JobType(StrEnum):
     """Kinds of long-running jobs handled by the platform."""
 
     DATA_PIPELINE = "data_pipeline"

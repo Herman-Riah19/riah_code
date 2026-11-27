@@ -2,6 +2,8 @@
 """TDD Tests pour le module corpus - Pipeline Orchestrator - écrits AVANT l'implémentation"""
 
 from pathlib import Path
+from unittest.mock import MagicMock
+
 from apps.modules.corpus.models.corpusModel import PipelineConfig
 from apps.modules.corpus.pipelines.pipelineOrchestrator import PipelineOrchestrator
 
@@ -11,7 +13,6 @@ class TestPipelineOrchestrator:
 
     def test_run_full_pipeline_returns_result(self):
         """Exécution complète du pipeline - doit retourner un résultat"""
-        from unittest.mock import MagicMock
         mock_scrapers = [MagicMock(), MagicMock()]
         mock_cleaner = MagicMock()
         mock_normalizer = MagicMock()

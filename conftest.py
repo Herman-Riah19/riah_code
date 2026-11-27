@@ -18,11 +18,7 @@ import sys
 from pathlib import Path
 
 import pytest
-
-try:
-    import torch
-except ImportError:  # pragma: no cover - torch is a hard dependency
-    torch = None  # type: ignore[assignment]
+import torch
 
 VENV_PYTHON = Path(__file__).parent / ".venv" / "Scripts" / "python.exe"
 
@@ -48,9 +44,6 @@ def pytest_configure(config: pytest.Config) -> None:
 
 def pytest_report_header(config: pytest.Config) -> list[str]:
     """Expose the PyTorch device used for this test session."""
-    if torch is None:
-        return ["pytorch: not installed"]
-
     if _cudaAvailable():
         return [
             f"pytorch: {torch.__version__} (CUDA available, device 0: "
@@ -75,15 +68,12 @@ def pytest_terminal_summary(
     if VENV_PYTHON.is_file():
         terminalreporter.write_sep(
             "-",
-            "GPU tests skipped: rerun with .venv "
-            "(scripts/runTests.ps1) to execute them",
+            "GPU tests skipped: rerun with .venv (scripts/runTests.ps1) to execute them",
         )
 
 
 def _cudaAvailable() -> bool:
     """Return True when the active interpreter exposes a CUDA device."""
-    if torch is None:
-        return False
     return bool(torch.cuda.is_available())
 
 

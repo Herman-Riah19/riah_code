@@ -1,15 +1,17 @@
 # tests/unit/test_tokenizer/test_tokenizerModel.py
 """Tests for tokenizer domain models and the BPE runtime wrapper."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+import pytest
+from tinyCorpus import TINY_CORPUS_TEXTS
+from tokenizers import Tokenizer, models
 
 from apps.modules.tokenizer.models.tokenizerModel import (
     BPETokenizer,
     TokenizerConfig,
     VocabInfo,
 )
-
-from tinyCorpus import TINY_CORPUS_TEXTS
 
 
 class TestTokenizerConfig:
@@ -19,9 +21,10 @@ class TestTokenizerConfig:
         assert TokenizerConfig().configHash() == TokenizerConfig().configHash()
 
     def test_config_hash_changes_with_vocab_size(self) -> None:
-        assert TokenizerConfig(vocabSize=1000).configHash() != TokenizerConfig(
-            vocabSize=2000
-        ).configHash()
+        assert (
+            TokenizerConfig(vocabSize=1000).configHash()
+            != TokenizerConfig(vocabSize=2000).configHash()
+        )
 
     def test_config_hash_is_short_hex(self) -> None:
         configHash = TokenizerConfig().configHash()
@@ -38,7 +41,7 @@ class TestVocabInfo:
             specialTokenIds={"<|endoftext|>": 0, "<|pad|>": 1},
             compressionRatio=3.75,
             oovRate=0.0,
-            trainedAt=datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc),
+            trainedAt=datetime(2026, 1, 2, 3, 4, 5, tzinfo=UTC),
             configHash="0123456789abcdef",
         )
 
@@ -52,7 +55,7 @@ class TestVocabInfo:
             specialTokenIds={},
             compressionRatio=1.0,
             oovRate=0.0,
-            trainedAt=datetime.now(timezone.utc),
+            trainedAt=datetime.now(UTC),
             configHash="abc",
         ).toDict()
 
@@ -114,11 +117,11 @@ class TestBPETokenizer:
         assert len(lengths) == 1
         assert all(
             len(sequence) == len(mask)
-            for sequence, mask in zip(batch["inputIds"], batch["attentionMask"])
+            for sequence, mask in zip(batch["inputIds"], batch["attentionMask"], strict=True)
         )
         assert all(
             tokenId == tokenizer.padTokenId
-            for tokenId, flag in zip(batch["inputIds"][0], batch["attentionMask"][0])
+            for tokenId, flag in zip(batch["inputIds"][0], batch["attentionMask"][0], strict=True)
             if flag == 0
         )
 
@@ -130,7 +133,7 @@ class TestBPETokenizer:
 
         assert all(
             len(sequence) == len(mask)
-            for sequence, mask in zip(batch["inputIds"], batch["attentionMask"])
+            for sequence, mask in zip(batch["inputIds"], batch["attentionMask"], strict=True)
         )
         assert all(flag == 1 for mask in batch["attentionMask"] for flag in mask)
 
@@ -164,15 +167,9 @@ class TestBPETokenizer:
 
 def test_bpe_tokenizer_requires_special_tokens(tmp_path) -> None:
     """Loading a tokenizer without the required special tokens must fail."""
-    from tokenizers import Tokenizer, models
-
     rawPath = tmp_path / "tokenizer.json"
     rawTokenizer = Tokenizer(models.BPE())
     rawTokenizer.save(str(rawPath))
 
-    try:
+    with pytest.raises(ValueError, match=r"<\|endoftext\|>"):
         BPETokenizer(rawPath)
-    except ValueError as error:
-        assert "<|endoftext|>" in str(error)
-    else:  # pragma: no cover - defensive assertion
-        raise AssertionError("BPETokenizer aurait du lever ValueError")

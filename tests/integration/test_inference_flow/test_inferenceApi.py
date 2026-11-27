@@ -108,7 +108,9 @@ def test_generate_requires_a_tokenizer(client: FlaskClient, seededCheckpoint: Ch
     assert response.get_json()["error"]["code"] == "TOKENIZER_NOT_FOUND"
 
 
-def test_generate_requires_a_checkpoint(client: FlaskClient, trainedTokenizer: dict[str, Any]) -> None:
+def test_generate_requires_a_checkpoint(
+    client: FlaskClient, trainedTokenizer: dict[str, Any]
+) -> None:
     response = client.post(
         "/api/inference/generate",
         headers=AUTH,

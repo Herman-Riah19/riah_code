@@ -41,6 +41,9 @@ d:\Project\riah_code/
 
 ### 2.1. Backend Python
 - **Environnement virtuel** : `.venv` à la racine (`d:\Project\riah_code\.venv`)
+- **Deux interpréteurs, volontairement** :
+  - `.venv\Scripts\python.exe` → PyTorch **CUDA** (les tests GPU s'exécutent réellement)
+  - `python` (global) → PyTorch **CPU only** (les tests GPU sont ignorés)
 - **Lancer le serveur Flask** :
   ```bash
   python run.py
@@ -49,10 +52,17 @@ d:\Project\riah_code/
   ```bash
   pip install -r requirement.txt
   ```
-- **Lancer les tests** :
-  ```bash
-  pytest
+- **Lancer les tests** (toujours via `.venv` pour couvrir le GPU) :
+  ```powershell
+  ./scripts/runTests.ps1                 # suite complète (unit + integration + gpu)
+  ./scripts/runTests.ps1 -Suite unit
+  ./scripts/runTests.ps1 -Suite integration
+  ./scripts/runTests.ps1 -Suite gpu -RequireGpu   # échoue si CUDA est indisponible
+  ./scripts/runTests.ps1 -Suite fast     # exclut slow et gpu
   ```
+  Équivalent direct : `.venv\Scripts\python.exe -m pytest`.
+  `--require-gpu` transforme un skip CUDA silencieux en échec explicite : à utiliser
+  en CI pour ne jamais masquer du code GPU non testé.
 
 ### 2.2. Frontend Web
 - **Répertoire de travail** : `web/`
@@ -116,4 +126,36 @@ Lorsqu'une modification ou une nouvelle fonctionnalité est demandée :
    - Définir le schéma d'entrée/sortie typé.
    - Implémenter la logique dans le service dédié.
    - Exposer la route Flask dans un Blueprint avec gestion d'erreurs structurée.
-   - Vérifier avec `pytest`.
+   - Vérifier avec `./scripts/runTests.ps1`.
+
+---
+
+## 5. Baseline Qualité Connue (ne pas « corriger » mécaniquement)
+
+Le dépôt utilise **camelCase** pour les fonctions, variables, paramètres, fichiers et modules
+(voir `CODING_RULES.md` §1). Plusieurs règles ruff par défaut vont donc à l'encontre du standard
+du projet. **Ces écarts sont assumés et documentés ici** : ne pas renommer du code camelCase en
+snake_case pour faire plaisir au linter.
+
+### 5.1. Seuil de lint applicable
+
+- **Bloquant** : `ruff check --select F apps/ tests/` → **0 erreur** (imports/variables inutilisés,
+  noms non définis). C'est le seuil défini par `CODING_RULES.md`.
+- **Bloquant** : `ruff format --check apps/ tests/ conftest.py` → **0 écart**.
+- **Bloquant** : `mypy apps/` → **0 erreur**.
+- **Non bloquant** : `ruff check apps/ tests/` sur le jeu de règles complet. Le reliquat
+  (~1890 findings) est un désaccord de convention, pas de la dette de code.
+
+### 5.2. Catégories ignorées par convention
+
+| Règle | Nombre | Raison |
+|-------|--------|--------|
+| `N802`, `N803`, `N806`, `N815`, `N816`, `N812` | ~1370 | ruff exige `snake_case` ; le projet impose `camelCase` (`trainStep`, `batchSize`, `corpusBlueprint`, alias `F` de `torch.nn.functional`). |
+| `N999` | 37 | ruff exige des modules `snake_case` ; le projet impose `camelCase` (`modelRunner.py`). |
+| `PLR2004` | 261 | Magic numbers dans les tests (codes HTTP `200`/`400`/`404`, tailles de vocab). |
+| `TID252` | 127 | Imports relatifs existants dans les modules. |
+| `TRY003` | 90 | `raise` avec message littéral (pas de hiérarchie d'exceptions dédiée partout). |
+| `PLR0913`, `PLR0917` | 20 | Constructeurs de configuration à nombreux paramètres explicites (lisibilité voulue). |
+
+Toute **nouvelle** violation hors de ces catégories doit être corrigée avant commit.
+

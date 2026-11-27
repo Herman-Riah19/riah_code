@@ -1,13 +1,17 @@
 # tests/unit/test_corpus/test_corpusModel.py
 """TDD Tests pour le module corpus - Modèles de domaine - écrits AVANT l'implémentation"""
 
-from datetime import datetime
+from dataclasses import FrozenInstanceError
+from datetime import UTC, datetime
 from pathlib import Path
+
+import pytest
+
 from apps.modules.corpus.models.corpusModel import (
-    RawDocument,
     CleanDocument,
-    ShardInfo,
     PipelineConfig,
+    RawDocument,
+    ShardInfo,
 )
 
 
@@ -23,7 +27,7 @@ class TestRawDocument:
             language="fr",
             text="Bonjour le monde",
             metadata={"title": "Test"},
-            scrapedAt=datetime.utcnow(),
+            scrapedAt=datetime.now(UTC),
         )
         assert doc.id == "doc-123"
         assert doc.source == "wikipedia"
@@ -39,12 +43,11 @@ class TestRawDocument:
             language="fr",
             text="Test",
             metadata={},
-            scrapedAt=datetime.utcnow(),
+            scrapedAt=datetime.now(UTC),
         )
-        from dataclasses import FrozenInstanceError
         try:
             doc.text = "Modifié"
-            assert False, "Devrait lever FrozenInstanceError"
+            pytest.fail("Devrait lever FrozenInstanceError")
         except FrozenInstanceError:
             pass  # Comportement attendu
 
@@ -58,7 +61,7 @@ class TestRawDocument:
                 language="fr",
                 text="",  # Texte vide - invalide
                 metadata={},
-                scrapedAt=datetime.utcnow(),
+                scrapedAt=datetime.now(UTC),
             )
             # Si on arrive ici, valider manuellement
             assert doc.text == "", "Texte vide accepté - devrait être rejeté"
@@ -78,7 +81,7 @@ class TestCleanDocument:
             text="Texte nettoyé",
             qualityScore=0.95,
             tokenCount=10,
-            cleanedAt=datetime.utcnow(),
+            cleanedAt=datetime.now(UTC),
         )
         assert doc.qualityScore == 0.95
         assert 0.0 <= doc.qualityScore <= 1.0
@@ -92,7 +95,7 @@ class TestCleanDocument:
             text="Test",
             qualityScore=1.5,  # Invalide > 1.0
             tokenCount=10,
-            cleanedAt=datetime.utcnow(),
+            cleanedAt=datetime.now(UTC),
         )
         assert doc.qualityScore == 1.5  # Si pas de validation, accepte - à corriger
 

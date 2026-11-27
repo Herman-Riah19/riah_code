@@ -57,7 +57,7 @@ class TestEventBus:
     def test_unsubscribe_unknown_handler_is_a_noop(self) -> None:
         bus = EventBus()
 
-        bus.unsubscribe(EventTypes.JOB_STARTED, lambda event: None)
+        bus.unsubscribe(EventTypes.JOB_STARTED, lambda _event: None)
 
     def test_failing_handler_does_not_block_others(self) -> None:
         bus = EventBus()

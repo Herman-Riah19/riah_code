@@ -1,10 +1,12 @@
 # tests/unit/test_corpus/test_corpusRepository.py
 """TDD Tests pour le module corpus - Repository - écrits AVANT l'implémentation"""
 
+from datetime import UTC, datetime
 from pathlib import Path
+
 from apps.modules.corpus.models.corpusModel import (
-    RawDocument,
     CleanDocument,
+    RawDocument,
     ShardInfo,
 )
 from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
@@ -15,7 +17,6 @@ class TestCorpusRepository:
 
     @staticmethod
     def _make_raw_doc(doc_id: str, source: str = "wikipedia", language: str = "fr") -> RawDocument:
-        from datetime import datetime
         return RawDocument(
             id=doc_id,
             source=source,
@@ -23,12 +24,11 @@ class TestCorpusRepository:
             language=language,
             text=f"Texte du document {doc_id}",
             metadata={},
-            scrapedAt=datetime.utcnow(),
+            scrapedAt=datetime.now(UTC),
         )
 
     @staticmethod
     def _make_clean_doc(doc_id: str, language: str = "fr") -> CleanDocument:
-        from datetime import datetime
         return CleanDocument(
             id=doc_id,
             source="wikipedia",
@@ -36,7 +36,7 @@ class TestCorpusRepository:
             text=f"Texte nettoyé {doc_id}",
             qualityScore=0.9,
             tokenCount=5,
-            cleanedAt=datetime.utcnow(),
+            cleanedAt=datetime.now(UTC),
         )
 
     def test_save_raw_documents(self):

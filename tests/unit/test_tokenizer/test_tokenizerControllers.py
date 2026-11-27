@@ -1,10 +1,11 @@
 # tests/unit/test_tokenizer/test_controllers.py
 """Tests for the tokenizer HTTP controller."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from flask import Flask, jsonify
+from tinyCorpus import TINY_CORPUS_TEXTS
 
 from apps.modules.corpus.models.corpusModel import CleanDocument
 from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
@@ -17,8 +18,6 @@ from apps.modules.tokenizer.controllers.tokenizerController import (
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 from apps.modules.tokenizer.services.tokenizerService import TokenizerService
 
-from tinyCorpus import TINY_CORPUS_TEXTS
-
 AUTH_HEADERS = {"Authorization": "Bearer dev-token"}
 
 
@@ -27,7 +26,6 @@ class InlineWorkerPool:
 
     def submit(self, task, *args):
         task(*args)
-        return None
 
 
 def makeCleanDocument(documentId: str, text: str) -> CleanDocument:
@@ -39,7 +37,7 @@ def makeCleanDocument(documentId: str, text: str) -> CleanDocument:
         text=text,
         qualityScore=0.9,
         tokenCount=len(text.split()),
-        cleanedAt=datetime.now(timezone.utc),
+        cleanedAt=datetime.now(UTC),
     )
 
 
@@ -116,8 +114,7 @@ class TestTokenizerController:
 
     def test_train_then_info(self, client, container: dict) -> None:
         documents = [
-            makeCleanDocument(f"doc-{index}", text)
-            for index, text in enumerate(TINY_CORPUS_TEXTS)
+            makeCleanDocument(f"doc-{index}", text) for index, text in enumerate(TINY_CORPUS_TEXTS)
         ]
         container["corpusRepo"].saveClean(documents)
 
@@ -233,8 +230,7 @@ class TestTokenizerController:
 
     def test_preview_returns_tokens(self, client, container: dict) -> None:
         documents = [
-            makeCleanDocument(f"doc-{index}", text)
-            for index, text in enumerate(TINY_CORPUS_TEXTS)
+            makeCleanDocument(f"doc-{index}", text) for index, text in enumerate(TINY_CORPUS_TEXTS)
         ]
         container["corpusRepo"].saveClean(documents)
         client.post(
@@ -267,8 +263,7 @@ class TestTokenizerController:
 
     def test_vocab_returns_tokens(self, client, container: dict):
         documents = [
-            makeCleanDocument(f"doc-{index}", text)
-            for index, text in enumerate(TINY_CORPUS_TEXTS)
+            makeCleanDocument(f"doc-{index}", text) for index, text in enumerate(TINY_CORPUS_TEXTS)
         ]
         container["corpusRepo"].saveClean(documents)
         client.post(
@@ -291,4 +286,3 @@ class TestTokenizerController:
         assert first["tokenId"] == 0
         ids = [t["tokenId"] for t in payload["tokens"]]
         assert ids == sorted(ids)
-

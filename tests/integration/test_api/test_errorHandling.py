@@ -16,7 +16,8 @@ AUTH = {"Authorization": "Bearer dev-token"}
 def errorOf(response: Any) -> dict[str, Any]:
     """Return the `error` object of a JSON error response."""
     payload = response.get_json()
-    assert isinstance(payload, dict) and "error" in payload, payload
+    assert isinstance(payload, dict), payload
+    assert "error" in payload, payload
     error: dict[str, Any] = payload["error"]
     return error
 

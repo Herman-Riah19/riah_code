@@ -1,10 +1,11 @@
 # tests/unit/test_tokenizer/test_tokenizerService.py
 """Tests for the tokenizer service - job lifecycle and path safety."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from tinyCorpus import TINY_CORPUS_TEXTS
 
 from apps.modules.corpus.models.corpusModel import CleanDocument
 from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
@@ -18,15 +19,12 @@ from apps.modules.tokenizer.models.tokenizerModel import TokenizerConfig
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 from apps.modules.tokenizer.services.tokenizerService import TokenizerService
 
-from tinyCorpus import TINY_CORPUS_TEXTS
-
 
 class InlineWorkerPool:
     """Run submitted jobs immediately, in the calling thread."""
 
     def submit(self, task, *args):
         task(*args)
-        return None
 
 
 def makeCleanDocument(documentId: str, text: str) -> CleanDocument:
@@ -38,7 +36,7 @@ def makeCleanDocument(documentId: str, text: str) -> CleanDocument:
         text=text,
         qualityScore=0.9,
         tokenCount=len(text.split()),
-        cleanedAt=datetime.now(timezone.utc),
+        cleanedAt=datetime.now(UTC),
     )
 
 
@@ -183,9 +181,7 @@ class TestTokenizerPathResolution:
     """Path resolution must stay inside the tokenizer directory."""
 
     def test_none_returns_stored_tokenizer_path(self, fixture: ServiceFixture) -> None:
-        assert fixture.service.resolveTokenizerPath(None) == (
-            fixture.tokenizerRepo.tokenizerPath
-        )
+        assert fixture.service.resolveTokenizerPath(None) == (fixture.tokenizerRepo.tokenizerPath)
 
     def test_absolute_path_inside_directory_is_allowed(
         self,

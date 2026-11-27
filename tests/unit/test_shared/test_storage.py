@@ -132,10 +132,9 @@ class TestSQLiteStorage:
         assert db.fetchOne("SELECT name FROM items")["name"] == "kept"
 
     def test_transaction_rolls_back_on_error(self, db: SQLiteStorage) -> None:
-        with pytest.raises(sqlite3.IntegrityError):
-            with db.transaction() as conn:
-                conn.execute("INSERT INTO items (id, name) VALUES (1, 'a')")
-                conn.execute("INSERT INTO items (id, name) VALUES (1, 'b')")
+        with pytest.raises(sqlite3.IntegrityError), db.transaction() as conn:
+            conn.execute("INSERT INTO items (id, name) VALUES (1, 'a')")
+            conn.execute("INSERT INTO items (id, name) VALUES (1, 'b')")
 
         assert db.fetchOne("SELECT * FROM items") is None
 

@@ -2,7 +2,9 @@
 """TDD Tests pour le module corpus - Service - écrits AVANT l'implémentation"""
 
 from pathlib import Path
-from apps.modules.corpus.models.corpusModel import PipelineConfig, CorpusStats
+from unittest.mock import MagicMock
+
+from apps.modules.corpus.models.corpusModel import CorpusStats, PipelineConfig
 from apps.modules.corpus.services.corpusService import CorpusService
 
 
@@ -11,8 +13,6 @@ class TestCorpusService:
 
     def test_start_pipeline_returns_job_id(self):
         """Démarrage d'un pipeline - doit retourner un ID de job"""
-        # Nécessite un repository mocke
-        from unittest.mock import MagicMock
         mock_orchestrator = MagicMock()
         mock_corpus_repo = MagicMock()
         mock_job_repo = MagicMock()
@@ -32,7 +32,6 @@ class TestCorpusService:
 
     def test_get_stats_returns_corpus_stats(self):
         """Récupération des stats - doit retourner un CorpusStats"""
-        from unittest.mock import MagicMock
         mock_orchestrator = MagicMock()
         mock_corpus_repo = MagicMock()
         mock_job_repo = MagicMock()

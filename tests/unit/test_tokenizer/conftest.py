@@ -4,6 +4,7 @@
 from pathlib import Path
 
 import pytest
+from tinyCorpus import TINY_CORPUS_TEXTS
 
 from apps.modules.tokenizer.models.tokenizerModel import (
     BPETokenizer,
@@ -12,8 +13,6 @@ from apps.modules.tokenizer.models.tokenizerModel import (
 )
 from apps.modules.tokenizer.pipelines.tokenizerTrainer import TokenizerTrainer
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
-
-from tinyCorpus import TINY_CORPUS_TEXTS
 
 
 @pytest.fixture(scope="session")

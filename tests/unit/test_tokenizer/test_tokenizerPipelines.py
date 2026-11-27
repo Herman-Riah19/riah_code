@@ -3,10 +3,11 @@
 
 import json
 from array import array
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from tinyCorpus import TINY_CORPUS_TEXTS
 
 from apps.modules.corpus.models.corpusModel import CleanDocument
 from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
@@ -14,8 +15,6 @@ from apps.modules.shared.kernel.exceptions import ValidationError
 from apps.modules.tokenizer.models.tokenizerModel import TokenizerConfig
 from apps.modules.tokenizer.pipelines.corpusEncoder import CorpusEncoder
 from apps.modules.tokenizer.pipelines.tokenizerTrainer import TokenizerTrainer
-
-from tinyCorpus import TINY_CORPUS_TEXTS
 
 
 def makeCleanDocument(
@@ -31,7 +30,7 @@ def makeCleanDocument(
         text=text,
         qualityScore=0.9,
         tokenCount=len(text.split()),
-        cleanedAt=datetime.now(timezone.utc),
+        cleanedAt=datetime.now(UTC),
     )
 
 
@@ -157,9 +156,7 @@ class TestCorpusEncoder:
         shard = corpusRepo.getShardsForTraining()[0]
         tokenIds = array("H")
         tokenIds.frombytes(shard.filePath.read_bytes())
-        firstEntry = json.loads(
-            shard.indexPath.read_text(encoding="utf-8").splitlines()[0]
-        )
+        firstEntry = json.loads(shard.indexPath.read_text(encoding="utf-8").splitlines()[0])
         offset = int(firstEntry["offset"])
         length = int(firstEntry["length"])
 

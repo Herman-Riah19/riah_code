@@ -10,6 +10,7 @@ import pytest
 from flask import Flask, jsonify
 from pydantic import BaseModel, Field
 
+from apps.modules.shared.decorators import auth, rateLimit
 from apps.modules.shared.decorators.auth import (
     AuthenticatedUser,
     optionalAuth,
@@ -184,8 +185,6 @@ class TestAuthDecorators:
             view(None)
 
     def test_validate_token_returns_none_outside_debug(self, monkeypatch) -> None:
-        from apps.modules.shared.decorators import auth
-
         monkeypatch.setattr(auth.settings, "debug", False)
         assert auth._validateToken("dev-token") is None
 
@@ -256,8 +255,6 @@ class TestRateLimitDecorator:
     @pytest.fixture(autouse=True)
     def freshLimiter(self, monkeypatch) -> None:
         """Give every test an isolated limiter instance."""
-        from apps.modules.shared.decorators import rateLimit
-
         monkeypatch.setattr(rateLimit, "_rateLimiter", rateLimit.RateLimiter())
 
     def test_allowed_response_carries_rate_limit_headers(self, client) -> None:
@@ -312,7 +309,7 @@ class TestRetryAndCircuitBreaker:
     """Retry backoff and circuit breaker transitions."""
 
     def test_retryable_eventually_succeeds(self, monkeypatch) -> None:
-        monkeypatch.setattr("time.sleep", lambda seconds: None)
+        monkeypatch.setattr("time.sleep", lambda _seconds: None)
         attempts: list[int] = []
 
         @retryable(maxAttempts=3, baseDelay=0.0, jitter=False)
@@ -326,7 +323,7 @@ class TestRetryAndCircuitBreaker:
         assert len(attempts) == 3
 
     def test_retryable_reraises_after_exhaustion(self, monkeypatch) -> None:
-        monkeypatch.setattr("time.sleep", lambda seconds: None)
+        monkeypatch.setattr("time.sleep", lambda _seconds: None)
 
         @retryable(maxAttempts=2, baseDelay=0.0, jitter=False)
         def alwaysFails() -> None:
@@ -336,7 +333,7 @@ class TestRetryAndCircuitBreaker:
             alwaysFails()
 
     def test_retryable_ignores_non_matching_exceptions(self, monkeypatch) -> None:
-        monkeypatch.setattr("time.sleep", lambda seconds: None)
+        monkeypatch.setattr("time.sleep", lambda _seconds: None)
 
         @retryable(maxAttempts=3, retryableExceptions=(KeyError,), jitter=False)
         def wrongError() -> None:

@@ -1,6 +1,8 @@
 # tests/unit/test_corpus/test_pipelines.py
 """TDD Tests pour le module corpus - Pipelines - écrits AVANT l'implémentation"""
 
+import pytest
+
 from apps.modules.corpus.pipelines.baseScraper import BaseScraper, ScrapeResult
 
 
@@ -11,7 +13,7 @@ class TestPipelines:
         """BaseScraper ne doit pas pouvoir être instancié directement"""
         try:
             BaseScraper()
-            assert False, "Devrait lever TypeError (classe abstraite)"
+            pytest.fail("Devrait lever TypeError (classe abstraite)")
         except TypeError:
             pass  # Comportement attendu
 

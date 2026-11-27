@@ -19,7 +19,7 @@ Pour les instructions détaillées complètes, se référer à :
    - Architecture en couches : `atoms` -> `molecules` -> `organisms` -> `templates` -> `pages`.
 
 2. **Backend (Python / Flask / ML)** :
-   - PEP 8 strict (`snake_case` pour les fonctions/variables, `PascalCase` pour les classes).
+   - Conventions `CODING_RULES.md` : `camelCase` pour fonctions/variables/paramètres, `UPPER_SNAKE_CASE` pour constantes, `PascalCase` pour classes.
    - Typage explicite avec `typing` sur toutes les fonctions et méthodes.
    - Séparation en couches : Contrôleurs de routes, Services applicatifs, Modèles ML, Pipelines de données.
    - Sécurisation absolue des chemins de fichiers et checkpoints (anti-directory traversal).
