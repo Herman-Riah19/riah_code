@@ -63,7 +63,7 @@ Il est **formellement interdit** d'importer ou de déclarer des fonctions, varia
 | Élément | Règle | Exemple |
 |---------|-------|---------|
 | Imports | Chaque import doit être utilisé dans le fichier | `from pathlib import Path` → `Path` doit apparaître dans le code |
-| Fonctions | Chaque fonction déclarée doit être appelée quelque part | `def helper():` doit avoir au moins un appel `helper()` |
+| Fonctions | Chaque helper interne doit avoir un usage; les appels indirects doivent être vérifiés avant suppression | Une route Flask ou un callback peut être appelé par le framework |
 | Variables | Chaque variable assignée doit être lue | `x = 1` → `x` doit être utilisé |
 | Classes | Chaque classe déclarée doit être instanciée ou utilisée | `class Helper:` doit avoir `Helper()` quelque part |
 | Modules | Chaque module importé doit avoir au moins un symbole utilisé | `import os` → `os.path` ou `os.environ` doit être utilisé |
@@ -76,9 +76,9 @@ import os
 import json
 from typing import Optional  # NON - Optional non utilisé
 
-# INTERDIT : fonction déclarée mais jamais appelée
+# INTERDIT : helper interne sans aucun appel ni contrat public
 def calculerTotal(items):
-    return sum(items)  # NON - jamais appelée
+    return sum(items)  # NON - helper inutilisé
 
 # INTERDIT : variable assignée mais jamais lue
 result = calculerTotal(data)  # NON - result jamais lu
@@ -88,6 +88,41 @@ print(data)  # result non utilisé
 ### Règle de détection
 
 Tous les fichiers doivent passer `ruff check --select F` avec **0 erreur**. Toute erreur `F401` (import unused) ou `F841` (local variable assigned but never used) doit être corrigée avant tout commit.
+
+### Fonctions, paramètres et surcouches
+
+- Supprimer une fonction, une classe, un paramètre ou une variable locale qui n'a aucun usage réel.
+- Avant de supprimer une fonction publique, vérifier ses références, ses exports et ses usages indirects (routes Flask, callbacks, plugins, tests et sérialisation). Un appel introuvable par recherche textuelle ne prouve pas qu'une API publique est inutilisée.
+- Ne pas conserver un paramètre uniquement pour le transmettre sans transformation ni contrat utile. Lorsqu'il est requis par une interface ou un callback, documenter cette contrainte ou utiliser le mécanisme de lint du projet pour signaler volontairement son inutilisation.
+- Éviter les fonctions relais, wrappers, conversions et classes qui ne valident, ne transforment, ne coordonnent ni ne protègent réellement leur appel. Une abstraction doit réduire la duplication ou isoler une responsabilité identifiable.
+- Préférer une implémentation directe et lisible; ne pas fractionner une opération simple en plusieurs helpers privés sans bénéfice de testabilité ou de réutilisation.
+
+```python
+# À éviter : wrapper sans responsabilité ni contrat supplémentaire
+def getTrainingConfig(job: Job) -> dict[str, Any]:
+    return job.config
+```
+
+Un helper reste justifié s'il porte une règle métier, un contrôle, une conversion ou un comportement partagé qui mérite un test indépendant.
+
+### Taille des fichiers et regroupement des classes
+
+- Un fichier Python de code ou de test ne doit jamais dépasser **500 lignes physiques** (lignes vides et commentaires inclus). Le découper avant d'atteindre cette limite, en conservant des modules cohérents et ciblés.
+- Regrouper les classes d'une même famille **et de la même couche** qui partagent un préfixe métier dans le module de ce domaine : par exemple `TrainingConfig`, `TrainingStartRequest` et `TrainingResult` dans `trainingModel.py`.
+- Le préfixe seul ne justifie jamais de mélanger les couches : `TrainingService` reste dans `trainingService.py`, et `TrainingLoop` dans `trainingLoop.py`. Ne pas regrouper contrôleurs, services, pipelines et modèles dans un unique fichier.
+- Si le regroupement d'une famille dépasse 500 lignes, scinder par sous-domaine en conservant le préfixe, par exemple `trainingConfig.py` et `trainingRequest.py`.
+- Respecter la convention du dépôt : les classes sont en `PascalCase`, les fichiers/modules en `camelCase`.
+- Les imports internes ciblent le module métier propriétaire; une façade de réexports telle que `modelModel.py` est réservée à la compatibilité des imports historiques.
+
+### Flux de données entre modules
+
+- Chaque module doit avoir une responsabilité et une interface d'entrée/sortie explicites, typées et stables; préférer les modèles métier/configurations aux dictionnaires anonymes.
+- Respecter le sens de dépendance existant : Controller → Service → Pipeline/ML → Repository pour l'orchestration d'entraînement; le Repository ne dépend pas du Service ou du Controller.
+- Un appelant orchestre le module suivant via son API publique, puis traite son résultat ou son erreur. Ne pas contourner les couches en accédant aux attributs privés d'un autre module.
+- Interdire les dépendances circulaires et les effets de bord cachés. Le chargement, l'entraînement, l'écriture et les transitions d'état doivent avoir un propriétaire explicite.
+- Exécuter séquentiellement les étapes qui dépendent du résultat de l'étape précédente. Ne paralléliser que les opérations indépendantes et sûres; coordonner explicitement l'accès partagé au GPU.
+- Dans l'application, partager un `GPUExecutionCoordinator` entre les services d'entraînement et d'inférence : l'entraînement attend la fin d'une inférence active; une inférence concurrente reçoit HTTP 503 (`GPU_BUSY`) au lieu de se mettre en attente. Ce verrou est limité au processus Python; un déploiement multi-processus doit fournir une coordination inter-processus.
+- Tester le contrat aux frontières des modules (entrées, sorties, erreurs et ordre d'orchestration) plutôt que de dupliquer les détails d'implémentation dans les tests.
 
 ---
 
@@ -175,6 +210,19 @@ apps/
 4. **Models** : Entités immuables (`frozen=True` dataclasses) ou Pydantic. Représentent le domaine.
 5. **Decorators** : Seules fonctions autorisées hors classes. Placées dans `apps/decorators/`.
 6. **ML & Pipelines** : Classes pures, sans dépendance Flask/HTTP. Réutilisables par CLI et API.
+7. **Contrats de modules** : Les couches communiquent par des signatures typées et des DTOs/configurations partagés, sans dépendance circulaire ni accès aux attributs privés d'une autre couche.
+8. **Orchestration** : Le Service déclenche les étapes dépendantes dans l'ordre et transmet leurs résultats; les opérations parallèles doivent être indépendantes et leur accès aux ressources partagées (notamment le GPU) doit être limité.
+
+### Programmation orientée objet et SOLID — règles strictes
+
+- Modéliser les composants métier avec des classes à responsabilité clairement définie et des dépendances injectées. Les fonctions restent adaptées aux transformations pures, aux endpoints et aux décorateurs; ne pas créer une classe artificielle autour d'une simple fonction.
+- **S — Responsabilité unique** : une classe/module ne doit avoir qu'une raison principale de changer. Séparer notamment validation HTTP, orchestration, accès aux données et calcul ML.
+- **O — Ouvert/fermé** : ajouter une variante métier par composition ou stratégie explicite plutôt qu'en multipliant les conditions dans un composant central.
+- **L — Substitution de Liskov** : toute implémentation ou sous-classe respecte intégralement le contrat, les types, les erreurs et les invariants de son parent/interface.
+- **I — Ségrégation des interfaces** : définir des contrats étroits, spécifiques au besoin réel; aucun appelant ne doit être forcé de fournir un paramètre qu'une implémentation n'utilise pas.
+- **D — Inversion des dépendances** : les services et l'orchestration dépendent d'abstractions métier; injecter repositories, workers et stratégies au lieu d'instancier l'infrastructure dans la logique métier.
+- Préférer la composition à l'héritage; réserver l'héritage aux relations de substitution réelles. Interdire les dépendances circulaires, les singletons globaux cachés et l'accès aux détails privés d'une autre classe.
+- Avant fusion, vérifier les responsabilités, les contrats et la substituabilité par des tests ciblés; une conformité de nommage ou de typage seule ne prouve pas le respect de SOLID.
 
 ### Exemple structure MVC + Repository
 
@@ -340,11 +388,15 @@ class JobService:
 
 ## 6. Bonnes Pratiques Machine Learning & PyTorch
 
-1. **Reproductibilité & Seeds** : Toujours permettre un seed explicite (`torch.manualSeed`, `numpy.random.seed`).
-2. **Gestion des Périphériques (`device`)** : Détecter automatiquement `torch.device("cuda" if torch.cuda.isAvailable() else "cpu")`. Ne jamais forcer `cuda` en dur.
+1. **Reproductibilité & Seeds** : Toujours permettre un seed explicite (`torch.manual_seed`, `numpy.random.seed`).
+2. **Gestion des Périphériques (`device`)** : Détecter automatiquement `torch.device("cuda" if torch.cuda.is_available() else "cpu")`. Ne jamais forcer `cuda` en dur.
 3. **Mode Évaluation & Grad** : Pour l'inférence : `model.eval()` + `with torch.inferenceMode():`.
 4. **Sécurité & Chemins** : Valider que tout chemin client se trouve dans le répertoire autorisé (`Path.resolve().isRelativeTo(baseDir)`).
-5. **Gestion Mémoire** : Libérer tensors volumineux + `torch.cuda.emptyCache()` à l'arrêt/rotation checkpoint.
+5. **Gestion Mémoire** : Libérer les références aux tensors devenus inutiles. Ne pas appeler `torch.cuda.empty_cache()` à chaque batch; le cache de l'allocateur est réutilisable et cette fonction ne libère pas la mémoire encore référencée.
+6. **Charge GPU maîtrisée** : Exposer et valider les paramètres qui déterminent la charge (taille du modèle, `microBatchSize`, `seqLen`, précision et accumulation). Pour une machine inconnue, documenter un profil prudent; augmenter la charge progressivement après mesure sur le matériel cible.
+7. **Pas de concurrence GPU implicite** : Limiter et superviser le nombre de jobs qui chargent un modèle sur le GPU. L'évaluation ou l'inférence ne doit pas créer silencieusement une seconde charge concurrente avec l'entraînement.
+8. **Diagnostic et reprise** : Enregistrer le périphérique, la configuration effective, les étapes et les erreurs; préserver un checkpoint exploitable lorsque le pipeline le permet. Traiter explicitement les erreurs CUDA/OOM au lieu de les masquer ou de relancer indéfiniment.
+9. **Limite matérielle** : Le code ne peut pas garantir qu'un PC ne s'éteindra pas à cause d'une surchauffe, d'une alimentation insuffisante ou d'une protection matérielle. Ne pas présenter la libération mémoire comme un contrôle de puissance; vérifier températures, alimentation, pilotes et journaux système sur la machine concernée.
 
 ```python
 # apps/ml/modelRunner.py

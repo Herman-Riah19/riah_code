@@ -23,15 +23,11 @@ from apps.modules.shared.kernel.workerPool import WorkerPool
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 
 from ..ml.modelRunner import ModelRunner
-from ..models.modelModel import (
-    MODEL_PRESETS,
-    Checkpoint,
-    ModelConfig,
-    TrainingConfig,
-    TrainingResult,
-)
+from ..models.modelConfig import MODEL_PRESETS, ModelConfig
+from ..models.trainingModel import Checkpoint, TrainingConfig, TrainingResult
 from ..pipelines.trainingLoop import TrainingLoop
 from ..repositories.checkpointRepository import CheckpointRepository
+from .gpuExecutionCoordinator import GPUExecutionCoordinator
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from apps.modules.tokenizer.models.tokenizerModel import BPETokenizer
@@ -51,6 +47,7 @@ class TrainingService:
         corpusRepo: CorpusRepository,
         jobRepo: JobRepository,
         workerPool: WorkerPool,
+        gpuCoordinator: GPUExecutionCoordinator,
         defaultCheckpointDir: Path | None = None,
     ) -> None:
         self._modelFactory = modelFactory
@@ -59,6 +56,7 @@ class TrainingService:
         self._corpusRepo = corpusRepo
         self._jobRepo = jobRepo
         self._workerPool = workerPool
+        self._gpuCoordinator = gpuCoordinator
         self._defaultCheckpointDir = defaultCheckpointDir
         self._loops: dict[str, TrainingLoop] = {}
         self._lock = RLock()
@@ -151,6 +149,32 @@ class TrainingService:
             modelName=modelName,
         )
 
+    def listJobCheckpoints(self, jobId: str, userId: str) -> list[Checkpoint]:
+        """Return all indexed checkpoints belonging to one owned training job."""
+        job = self.getJob(jobId, userId)
+        config = job.config.get("trainingConfig")
+        modelName = config.get("modelName") if isinstance(config, dict) else None
+        count = self._checkpointRepo.count(modelName=modelName)
+        checkpoints = self._checkpointRepo.listAll(
+            limit=count,
+            modelName=modelName,
+        )
+        return [
+            checkpoint for checkpoint in checkpoints if checkpoint.metadata.get("runId") == jobId
+        ]
+
+    def getTrainingHistory(self, jobId: str, userId: str) -> list[dict[str, Any]]:
+        """Read the JSONL training history for an owned training job."""
+        job = self.getJob(jobId, userId)
+        config = job.config.get("trainingConfig")
+        if not isinstance(config, dict):
+            return []
+
+        checkpointDir = config.get("checkpointDir")
+        if not isinstance(checkpointDir, str):
+            return []
+        return self._checkpointRepo.readTrainingHistory(Path(checkpointDir), jobId)
+
     def getCheckpoint(self, checkpointId: str) -> Checkpoint:
         """Return one checkpoint or raise `CheckpointNotFoundError`."""
         checkpoint = self._checkpointRepo.findById(checkpointId)
@@ -182,39 +206,63 @@ class TrainingService:
         resumeFrom: str | None,
     ) -> None:
         """Worker entry point: train, resume and record the outcome."""
-        job = self._startJob(jobId)
-        if job is None:
-            return
+        with self._gpuCoordinator.training():
+            job = self._startJob(jobId)
+            if job is None:
+                return
 
-        loop: TrainingLoop | None = None
-        try:
-            runner = self._buildRunner(config)
-            loop = TrainingLoop(
-                config=config,
-                modelRunner=runner,
-                tokenizer=self._loadTokenizer(),
-                checkpointRepo=self._checkpointRepo,
-                runId=jobId,
-                progressCallback=self._buildProgressHandler(jobId),
-            )
-            if resumeFrom is not None:
-                loop.loadCheckpoint(self._checkpointRepo.requireById(resumeFrom))
+            loop: TrainingLoop | None = None
+            try:
+                tokenizer = self._loadTokenizer()
+                if resumeFrom is None:
+                    config = self._matchTokenizerConfig(config, tokenizer)
+                job.config.update(self._serializeJobConfig(config, jobId))
+                self._jobRepo.save(job)
 
-            with self._lock:
-                self._loops[jobId] = loop
+                runner = self._buildRunner(config)
+                loop = TrainingLoop(
+                    config=config,
+                    modelRunner=runner,
+                    tokenizer=tokenizer,
+                    checkpointRepo=self._checkpointRepo,
+                    runId=jobId,
+                    progressCallback=self._buildProgressHandler(jobId),
+                )
+                if resumeFrom is not None:
+                    loop.loadCheckpoint(self._checkpointRepo.requireById(resumeFrom))
 
-            result = loop.train()
-            job.progress = loop.snapshot()
-            job.status = JobStatus.CANCELLED if loop.cancelled else JobStatus.COMPLETED
-            job.result = self._buildResult(result, config, loop.cancelled)
-        except Exception as error:  # noqa: BLE001 - surface any failure to the job
-            job.status = JobStatus.FAILED
-            job.error = str(error)
-        finally:
-            with self._lock:
-                self._loops.pop(jobId, None)
-            job.finishedAt = datetime.now(UTC)
-            self._jobRepo.save(job)
+                with self._lock:
+                    self._loops[jobId] = loop
+
+                result = loop.train()
+                job.progress = loop.snapshot()
+                job.status = JobStatus.CANCELLED if loop.cancelled else JobStatus.COMPLETED
+                job.result = self._buildResult(result, config, loop.cancelled)
+            except Exception as error:  # noqa: BLE001 - surface any failure to the job
+                job.status = JobStatus.FAILED
+                job.error = str(error)
+            finally:
+                with self._lock:
+                    self._loops.pop(jobId, None)
+                job.finishedAt = datetime.now(UTC)
+                self._jobRepo.save(job)
+
+    @staticmethod
+    def _matchTokenizerConfig(
+        config: TrainingConfig,
+        tokenizer: BPETokenizer | None,
+    ) -> TrainingConfig:
+        """Ensure model embeddings cover the tokenizer and share its special IDs."""
+        if tokenizer is None:
+            return config
+
+        modelConfig = replace(
+            config.modelConfig,
+            vocabSize=max(config.modelConfig.vocabSize, tokenizer.vocabSize),
+            eosTokenId=tokenizer.eosTokenId,
+            padTokenId=tokenizer.padTokenId,
+        )
+        return replace(config, modelConfig=modelConfig)
 
     @staticmethod
     def _buildResult(
@@ -307,7 +355,7 @@ class TrainingService:
     def _startJob(self, jobId: str) -> Job | None:
         """Mark a job as running and persist the transition."""
         job = self._jobRepo.findById(jobId)
-        if job is None:
+        if job is None or job.status is not JobStatus.PENDING:
             return None
         job.status = JobStatus.RUNNING
         job.startedAt = datetime.now(UTC)

@@ -59,6 +59,14 @@ class TestTrainingConfig:
         config = tinyTrainingConfig(batchSize=4, gradientAccumulationSteps=3)
         assert config.effectiveBatchSize == 12
 
+    def test_effective_batch_size_uses_micro_batch_size_when_configured(self) -> None:
+        config = tinyTrainingConfig(
+            batchSize=8,
+            microBatchSize=2,
+            gradientAccumulationSteps=3,
+        )
+        assert config.effectiveBatchSize == 6
+
     def test_dict_round_trip_with_paths(self) -> None:
         config = tinyTrainingConfig(
             trainShards=[Path("data/shards/train_000.bin")],

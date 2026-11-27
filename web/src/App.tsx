@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { CorpusPage } from '@/pages/CorpusPage'
 import { TokenizerPage } from '@/pages/TokenizerPage'
+import { TrainingPage } from '@/pages/TrainingPage'
 import { DashboardTemplate } from '@/components/templates/DashboardTemplate'
 import { Box } from '@/components/atoms/Box'
 import { Text } from '@/components/atoms/Text'
@@ -10,16 +11,6 @@ function HomeContent() {
     <Box className="p-4">
       <Text size="md" color="muted">
         Bienvenue sur Riah Code - Plateforme d entrainement et d inference
-      </Text>
-    </Box>
-  )
-}
-
-function TrainingContent() {
-  return (
-    <Box className="p-4">
-      <Text size="md" color="muted">
-        Page Entrainement - bientot disponible
       </Text>
     </Box>
   )
@@ -43,7 +34,7 @@ function App() {
           <Route path="/" element={<HomeContent />} />
           <Route path="/corpus" element={<CorpusPage />} />
           <Route path="/tokenizer" element={<TokenizerPage />} />
-          <Route path="/training" element={<TrainingContent />} />
+          <Route path="/training" element={<TrainingPage />} />
           <Route path="/inference" element={<InferenceContent />} />
         </Routes>
       </DashboardTemplate>

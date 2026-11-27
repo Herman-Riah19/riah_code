@@ -27,3 +27,22 @@ export function formatDate(value: string): string {
   if (Number.isNaN(date.getTime())) return '-'
   return DATE_FORMATTER.format(date)
 }
+
+export function formatTokensPerStep(batchSize: number, seqLen: number): string {
+  const tokens = batchSize * seqLen
+  return tokens >= 1e6 ? `${(tokens / 1e6).toFixed(1)}M` : tokens >= 1e3 ? `${(tokens / 1e3).toFixed(0)}k` : String(tokens)
+}
+
+export function formatTotalTokens(batchSize: number, seqLen: number, maxSteps: number): string {
+  const total = batchSize * seqLen * maxSteps
+  if (total >= 1e9) return `${(total / 1e9).toFixed(2)}B`
+  if (total >= 1e6) return `${(total / 1e6).toFixed(1)}M`
+  if (total >= 1e3) return `${(total / 1e3).toFixed(1)}k`
+  return String(total)
+}
+
+export function formatBillionProgress(batchSize: number, seqLen: number, maxSteps: number): string {
+  const total = batchSize * seqLen * maxSteps
+  const pct = (total / 1e9) * 100
+  return `${pct.toFixed(1)}%`
+}

@@ -22,7 +22,7 @@ AUTH = {"Authorization": "Bearer dev-token"}
 class ExplodingScraper(BaseScraper):
     """Scraper failing on purpose to exercise the job error path."""
 
-    def scrape(self, outputDir: Path, corpusRepo: Any) -> ScrapeResult:
+    def scrape(self, corpusRepo: Any) -> ScrapeResult:
         """Always fail with a readable message."""
         raise RuntimeError("source indisponible")
 

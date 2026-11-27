@@ -110,7 +110,7 @@ class PipelineOrchestrator:
     def _scrape(self, config: PipelineConfig) -> int:
         totalScraped = 0
         for scraper in self._scrapers:
-            result = scraper.scrape(config.outputDir, self._corpusRepo)
+            result = scraper.scrape(self._corpusRepo)
             totalScraped += result.documentsScraped
         return int(totalScraped)
 

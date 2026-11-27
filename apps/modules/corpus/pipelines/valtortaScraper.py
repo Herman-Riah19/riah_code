@@ -13,7 +13,6 @@ import re
 import time
 from html import unescape
 from html.parser import HTMLParser
-from pathlib import Path
 
 from ..models.corpusModel import BibleScraperConfig, RawDocument, ScrapeResult
 from ..repositories.corpusRepository import CorpusRepository
@@ -120,7 +119,7 @@ class ValtortaScraper(HttpScraper):
             languages=["fr"],
         )
 
-    def scrape(self, outputDir: Path, corpusRepo: CorpusRepository) -> ScrapeResult:
+    def scrape(self, corpusRepo: CorpusRepository) -> ScrapeResult:
         """Walk every tome index, then fetch and persist each chapter."""
         startedAt = time.monotonic()
         errors: list[str] = []

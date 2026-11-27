@@ -16,6 +16,7 @@ from fakes import (
 from tinyModel import tinyGenerationOptions, tinyModelConfig
 
 from apps.modules.model.repositories.checkpointRepository import CheckpointRepository
+from apps.modules.model.services.gpuExecutionCoordinator import GPUExecutionCoordinator
 from apps.modules.model.services.inferenceService import InferenceService
 from apps.modules.shared.kernel.exceptions import (
     CheckpointNotFoundError,
@@ -38,6 +39,7 @@ class InferenceFixture:
     ) -> None:
         self.baseDir = tmp_path
         self.checkpointRepo = CheckpointRepository(tmp_path / "checkpoints")
+        self.gpuCoordinator = GPUExecutionCoordinator()
         self.tokenizerRepo = FakeTokenizerRepository(
             fail=failTokenizer,
             tokenizer=tokenizer,
@@ -45,6 +47,7 @@ class InferenceFixture:
         self.service = InferenceService(
             tokenizerRepo=self.tokenizerRepo,  # type: ignore[arg-type]
             checkpointRepo=self.checkpointRepo,
+            gpuCoordinator=self.gpuCoordinator,
             modelFactory=cpuModelFactory,
             cacheCapacity=capacity,
         )
@@ -68,6 +71,7 @@ def makeService(
     service = InferenceService(
         tokenizerRepo=FakeTokenizerRepository(tokenizer=tokenizer),  # type: ignore[arg-type]
         checkpointRepo=repository,
+        gpuCoordinator=GPUExecutionCoordinator(),
         modelFactory=cpuModelFactory,
         cacheCapacity=capacity,
     )

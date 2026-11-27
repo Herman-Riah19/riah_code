@@ -72,3 +72,8 @@ class CancellationException(RiahAppError):  # noqa: N818 - name kept for the PRD
 class RateLimitError(RiahAppError):
     statusCode = 429
     errorCode = "RATE_LIMITED"
+
+
+class GPUResourceBusyError(RiahAppError):
+    statusCode = 503
+    errorCode = "GPU_BUSY"

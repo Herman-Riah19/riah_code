@@ -11,7 +11,13 @@ from typing import Any
 
 import pytest
 import torch
-from fakes import DeferredWorkerPool, InlineWorkerPool, cpuModelFactory
+from fakes import (
+    DeferredWorkerPool,
+    FakeTokenizer,
+    FakeTokenizerRepository,
+    InlineWorkerPool,
+    cpuModelFactory,
+)
 from tinyModel import tinyModelConfig, tinyTrainingConfig
 from tinyShards import writeTinyShard
 
@@ -23,6 +29,7 @@ from apps.modules.model.models.modelModel import (
     TrainingConfig,
 )
 from apps.modules.model.repositories.checkpointRepository import CheckpointRepository
+from apps.modules.model.services.gpuExecutionCoordinator import GPUExecutionCoordinator
 from apps.modules.model.services.trainingService import TrainingService
 from apps.modules.shared.kernel.exceptions import (
     CheckpointNotFoundError,
@@ -45,6 +52,7 @@ class TrainingFixture:
     ) -> None:
         self.tmpPath = tmp_path
         self.checkpointRepo = CheckpointRepository(tmp_path / "checkpoints")
+        self.gpuCoordinator = GPUExecutionCoordinator()
         self.tokenizerRepo = TokenizerRepository(tmp_path / "tokenizer")
         self.corpusRepo = CorpusRepository(tmp_path / "corpus")
         self.jobRepo = JobRepository()
@@ -69,6 +77,7 @@ class TrainingFixture:
             corpusRepo=self.corpusRepo,
             jobRepo=self.jobRepo,
             workerPool=workerPool or InlineWorkerPool(),
+            gpuCoordinator=self.gpuCoordinator,
             defaultCheckpointDir=tmp_path / "runs",
         )
 
@@ -81,6 +90,32 @@ def fixture(tmp_path: Path) -> TrainingFixture:
 
 class TestTrainingJobLifecycle:
     """Start, inspect and finish training jobs."""
+
+    def test_training_model_vocabulary_covers_the_installed_tokenizer(
+        self, fixture: TrainingFixture
+    ) -> None:
+        class WideTokenizer(FakeTokenizer):
+            vocabSize = 32_000
+            eosTokenId = 17
+            padTokenId = 19
+
+        pool = DeferredWorkerPool()
+        service = buildService(
+            fixture,
+            tokenizerRepo=FakeTokenizerRepository(tokenizer=WideTokenizer()),
+            workerPool=pool,
+        )
+
+        job = service.startTraining(fixture.config, "user-1")
+
+        task, args = pool.tasks[0]
+        task(*args)
+        completedJob = fixture.jobRepo.findById(job.id)
+
+        assert completedJob is not None
+        assert completedJob.config["trainingConfig"]["modelConfig"]["vocabSize"] == 32_000
+        assert completedJob.config["trainingConfig"]["modelConfig"]["eosTokenId"] == 17
+        assert completedJob.config["trainingConfig"]["modelConfig"]["padTokenId"] == 19
 
     def test_start_training_completes(self, fixture: TrainingFixture) -> None:
         job = fixture.service.startTraining(fixture.config, "user-1")
@@ -230,9 +265,13 @@ class TestTrainingCancellation:
 
         cancelled = fixture.service.cancelTraining(job.id, "user-1")
 
+        task, args = pool.tasks[0]
+        task(*args)
+
         assert cancelled.status is JobStatus.CANCELLED
         assert cancelled.finishedAt is not None
         assert cancelled.progress["cancelRequested"] is True
+        assert fixture.jobRepo.findById(job.id).status is JobStatus.CANCELLED
 
     def test_cancel_completed_job_raises(self, fixture: TrainingFixture) -> None:
         job = fixture.service.startTraining(fixture.config, "user-1")
@@ -346,6 +385,7 @@ def buildService(
         corpusRepo=fixture.corpusRepo,
         jobRepo=fixture.jobRepo,
         workerPool=workerPool or InlineWorkerPool(),
+        gpuCoordinator=fixture.gpuCoordinator,
         defaultCheckpointDir=fixture.tmpPath / "runs",
     )
 
@@ -388,6 +428,7 @@ class TestTrainingQueries:
             corpusRepo=fixture.corpusRepo,
             jobRepo=fixture.jobRepo,
             workerPool=InlineWorkerPool(),
+            gpuCoordinator=fixture.gpuCoordinator,
             defaultCheckpointDir=None,
         )
 

@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from ..models.corpusModel import BibleScraperConfig, RawDocument, ScrapeResult
@@ -58,7 +57,7 @@ class BibleScraper(HttpScraper):
     def __init__(self, config: BibleScraperConfig | None = None) -> None:
         self._config = config or BibleScraperConfig()
 
-    def scrape(self, outputDir: Path, corpusRepo: CorpusRepository) -> ScrapeResult:
+    def scrape(self, corpusRepo: CorpusRepository) -> ScrapeResult:
         """Download the requested translations and persist their chapters."""
         startedAt = time.monotonic()
         errors: list[str] = []

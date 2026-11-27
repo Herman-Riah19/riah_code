@@ -85,7 +85,6 @@ class FakeScraper(BaseScraper):
 
     def scrape(
         self,
-        outputDir: Path,
         corpusRepo: Any,
     ) -> ScrapeResult:
         """Store the documents and report how many were handled."""
@@ -99,7 +98,7 @@ class FakeScraper(BaseScraper):
 class ExplodingScraper(BaseScraper):
     """Raise on purpose so the job failure path can be asserted."""
 
-    def scrape(self, outputDir: Path, corpusRepo: Any) -> ScrapeResult:
+    def scrape(self, corpusRepo: Any) -> ScrapeResult:
         """Always fail."""
         raise RuntimeError("source indisponible")
 

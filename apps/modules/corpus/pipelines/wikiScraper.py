@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import time
 import xml.etree.ElementTree as ET
-from pathlib import Path
 
 from ...shared.kernel.exceptions import RiahAppError, ValidationError
 from ..models.corpusModel import RawDocument, ScrapeResult, WikiScraperConfig
@@ -23,7 +22,7 @@ class WikiScraper(HttpScraper):
     def __init__(self, config: WikiScraperConfig | None = None) -> None:
         self._config = config or WikiScraperConfig()
 
-    def scrape(self, outputDir: Path, corpusRepo: CorpusRepository) -> ScrapeResult:
+    def scrape(self, corpusRepo: CorpusRepository) -> ScrapeResult:
         """Scrape from the XML dump or from the paginated REST API."""
         startedAt = time.monotonic()
         if self._config.useDump:

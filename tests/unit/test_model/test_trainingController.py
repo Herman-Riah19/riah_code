@@ -1,161 +1,26 @@
-# tests/unit/test_model/test_modelControllers.py
-"""Tests for the training and inference HTTP controllers."""
+"""Training HTTP controller contract tests."""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
-from fakes import (
-    DeferredWorkerPool,
-    FakeTokenizerRepository,
-    InlineWorkerPool,
-    cpuModelFactory,
-    makeCheckpoint,
-)
-from flask import Flask, jsonify
 from tinyShards import writeTinyShard
 
-from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
-from apps.modules.model.controllers.inferenceController import (
-    InferenceContainer,
-    inferenceBlueprint,
-)
-from apps.modules.model.controllers.trainingController import (
-    TrainingContainer,
-    trainingBlueprint,
-)
-from apps.modules.model.repositories.checkpointRepository import CheckpointRepository
-from apps.modules.model.services.inferenceService import InferenceService
-from apps.modules.model.services.trainingService import TrainingService
-from apps.modules.shared.kernel.exceptions import RiahAppError
-from apps.modules.shared.kernel.job import JobRepository
-from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
-
-AUTH_HEADERS = {"Authorization": "Bearer dev-token"}
-
-TRAIN_PAYLOAD: dict[str, Any] = {
-    "preset": "tiny",
-    "modelName": "tiny-test",
-    "batchSize": 2,
-    "seqLen": 8,
-    "maxSteps": 1,
-    "evalInterval": 1,
-    "checkpointInterval": 1,
-    "logInterval": 0,
-    "numWorkers": 0,
-    "compileModel": False,
-    "dtype": "fp32",
-}
-
-
-def buildApp(*blueprints) -> Flask:
-    """Create a test Flask app exposing the domain error handler."""
-    application = Flask(__name__)
-    application.config.update(TESTING=True)
-
-    @application.errorhandler(RiahAppError)
-    def handleAppError(error: RiahAppError):
-        response = jsonify(error.to_dict())
-        response.status_code = error.statusCode
-        return response
-
-    for blueprint in blueprints:
-        application.register_blueprint(blueprint)
-    return application
-
-
-def errorCode(response) -> str:
-    """Return the domain error code of a failed response."""
-    return str(response.get_json()["error"]["code"])
-
-
-class TrainingContext:
-    """Bundle the training container overrides and the test client."""
-
-    def __init__(self, tmp_path: Path, monkeypatch, *, inline: bool = True) -> None:
-        self.checkpointRepo = CheckpointRepository(tmp_path / "checkpoints")
-        self.tokenizerRepo = TokenizerRepository(tmp_path / "tokenizer")
-        self.corpusRepo = CorpusRepository(tmp_path / "corpus")
-        self.jobRepo = JobRepository()
-        self.pool = InlineWorkerPool() if inline else DeferredWorkerPool()
-        self.service = TrainingService(
-            modelFactory=cpuModelFactory,
-            tokenizerRepo=self.tokenizerRepo,
-            checkpointRepo=self.checkpointRepo,
-            corpusRepo=self.corpusRepo,
-            jobRepo=self.jobRepo,
-            workerPool=self.pool,
-            defaultCheckpointDir=tmp_path / "runs",
-        )
-        monkeypatch.setattr(TrainingContainer, "_checkpointRepository", self.checkpointRepo)
-        monkeypatch.setattr(TrainingContainer, "_tokenizerRepository", self.tokenizerRepo)
-        monkeypatch.setattr(TrainingContainer, "_corpusRepository", self.corpusRepo)
-        monkeypatch.setattr(TrainingContainer, "_jobRepository", self.jobRepo)
-        monkeypatch.setattr(TrainingContainer, "_workerPool", self.pool)
-        monkeypatch.setattr(TrainingContainer, "_service", self.service)
-
-        self.app = buildApp(trainingBlueprint)
-        self.client = self.app.test_client()
-        self.shard = writeTinyShard(
-            self.corpusRepo.getShardDir(),
-            name="shard_000001.bin",
-            seed=17,
-        )
-
-    def start(self, **overrides: Any):
-        """Post a training job with the default payload plus overrides."""
-        return self.client.post(
-            "/api/training/jobs",
-            headers=AUTH_HEADERS,
-            json={**TRAIN_PAYLOAD, **overrides},
-        )
-
-
-class InferenceContext:
-    """Bundle the inference container overrides and the test client."""
-
-    def __init__(self, tmp_path: Path, monkeypatch) -> None:
-        self.checkpointRepo = CheckpointRepository(tmp_path / "checkpoints")
-        self.tokenizerRepo = FakeTokenizerRepository()
-        self.service = InferenceService(
-            tokenizerRepo=self.tokenizerRepo,  # type: ignore[arg-type]
-            checkpointRepo=self.checkpointRepo,
-            modelFactory=cpuModelFactory,
-            cacheCapacity=2,
-        )
-        monkeypatch.setattr(InferenceContainer, "_checkpointRepository", self.checkpointRepo)
-        monkeypatch.setattr(InferenceContainer, "_tokenizerRepository", self.tokenizerRepo)
-        monkeypatch.setattr(InferenceContainer, "_service", self.service)
-
-        self.app = buildApp(inferenceBlueprint)
-        self.client = self.app.test_client()
-        self.checkpoint = makeCheckpoint(
-            tmp_path,
-            self.checkpointRepo,
-            "ckpt-a",
-            isBest=True,
-            modelName="tiny-test",
-        )
+from apps.modules.model.controllers.trainingController import trainingBlueprint
+from controllerTestFixtures import AUTH_HEADERS, TrainingContext, errorCode
 
 
 @pytest.fixture
-def training(tmp_path: Path, monkeypatch) -> TrainingContext:
+def training(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TrainingContext:
     """Training controller wired to temporary repositories."""
     return TrainingContext(tmp_path, monkeypatch)
 
 
 @pytest.fixture
-def deferredTraining(tmp_path: Path, monkeypatch) -> TrainingContext:
+def deferredTraining(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TrainingContext:
     """Training controller whose worker pool never runs the job."""
     return TrainingContext(tmp_path, monkeypatch, inline=False)
-
-
-@pytest.fixture
-def inference(tmp_path: Path, monkeypatch) -> InferenceContext:
-    """Inference controller wired to a fake tokenizer and one checkpoint."""
-    return InferenceContext(tmp_path, monkeypatch)
 
 
 class TestTrainingControllerWiring:
@@ -176,6 +41,9 @@ class TestTrainingControllerWiring:
             ("post", "/api/training/jobs"),
             ("post", "/api/training/jobs/unknown/cancel"),
             ("post", "/api/training/jobs/unknown/resume"),
+            ("get", "/api/training/jobs/unknown/stream"),
+            ("get", "/api/training/jobs/unknown/history"),
+            ("post", "/api/training/jobs/unknown/evaluate"),
         ],
     )
     def test_endpoints_require_auth(
@@ -348,8 +216,58 @@ class TestTrainingControllerJobs:
             "/api/training/jobs/unknown/cancel",
             headers=AUTH_HEADERS,
         )
-
         assert response.status_code == 404
+
+    def test_history_returns_jsonl_entries(self, training: TrainingContext) -> None:
+        created = training.start().get_json()
+        checkpointDir = Path(created["result"]["checkpointDir"])
+        logFile = checkpointDir / "training_log.jsonl"
+        logFile.write_text(
+            '{"step":1,"train/loss":0.5}\nnot-json\n{"step":2,"train/loss":0.25}\n',
+            encoding="utf-8",
+        )
+
+        response = training.client.get(
+            f"/api/training/jobs/{created['id']}/history",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        history = response.get_json()["history"]
+        assert [entry["step"] for entry in history] == [1, 2]
+
+    def test_history_unknown_job_returns_404(self, training: TrainingContext) -> None:
+        response = training.client.get(
+            "/api/training/jobs/unknown/history",
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 404
+
+    def test_stream_completed_job_returns_final_event(self, training: TrainingContext) -> None:
+        created = training.start().get_json()
+
+        response = training.client.get(
+            f"/api/training/jobs/{created['id']}/stream",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        assert response.mimetype == "text/event-stream"
+        assert "final" in response.get_data(as_text=True)
+
+    def test_evaluate_pending_job_without_checkpoint_returns_validation_error(
+        self, deferredTraining: TrainingContext
+    ) -> None:
+        created = deferredTraining.start().get_json()
+
+        response = deferredTraining.client.post(
+            f"/api/training/jobs/{created['id']}/evaluate",
+            headers=AUTH_HEADERS,
+            json={"prompt": "Hello"},
+        )
+
+        assert response.status_code == 400
+        assert errorCode(response) == "VALIDATION_ERROR"
 
 
 class TestTrainingControllerResume:
@@ -494,173 +412,3 @@ class TestTrainingControllerCheckpoints:
 
         assert response.status_code == 404
         assert errorCode(response) == "CHECKPOINT_NOT_FOUND"
-
-
-class TestInferenceControllerWiring:
-    """Blueprint metadata and authentication."""
-
-    def test_blueprint_metadata(self) -> None:
-        assert inferenceBlueprint.name == "inference"
-        assert inferenceBlueprint.url_prefix == "/api/inference"
-
-    @pytest.mark.parametrize(
-        ("method", "path"),
-        [
-            ("get", "/api/inference/models"),
-            ("get", "/api/inference/models/unknown"),
-            ("post", "/api/inference/generate"),
-        ],
-    )
-    def test_endpoints_require_auth(
-        self, inference: InferenceContext, method: str, path: str
-    ) -> None:
-        response = getattr(inference.client, method)(path)
-
-        assert response.status_code == 401
-        assert errorCode(response) == "UNAUTHORIZED"
-
-
-class TestInferenceControllerModels:
-    """Model cards exposed to the dashboard."""
-
-    def test_list_models(self, inference: InferenceContext) -> None:
-        response = inference.client.get(
-            "/api/inference/models",
-            headers=AUTH_HEADERS,
-        )
-
-        assert response.status_code == 200
-        payload = response.get_json()
-        assert [card["id"] for card in payload] == ["ckpt-a"]
-        card = payload[0]
-        assert card["modelName"] == "tiny-test"
-        assert card["architecture"]["vocabSize"] == 64
-
-    @pytest.mark.parametrize("query", ["limit=0", "limit=zero"])
-    def test_list_models_rejects_invalid_limit(
-        self, inference: InferenceContext, query: str
-    ) -> None:
-        response = inference.client.get(
-            f"/api/inference/models?{query}",
-            headers=AUTH_HEADERS,
-        )
-
-        assert response.status_code == 400
-
-    def test_get_model(self, inference: InferenceContext) -> None:
-        response = inference.client.get(
-            "/api/inference/models/ckpt-a",
-            headers=AUTH_HEADERS,
-        )
-
-        assert response.status_code == 200
-        assert response.get_json()["id"] == "ckpt-a"
-
-    def test_get_unknown_model_returns_404(self, inference: InferenceContext) -> None:
-        response = inference.client.get(
-            "/api/inference/models/missing",
-            headers=AUTH_HEADERS,
-        )
-
-        assert response.status_code == 404
-        assert errorCode(response) == "CHECKPOINT_NOT_FOUND"
-
-
-class TestInferenceControllerGenerate:
-    """Text generation over HTTP."""
-
-    def test_generate_returns_completion(self, inference: InferenceContext) -> None:
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            json={
-                "prompt": "abc",
-                "maxTokens": 2,
-                "temperature": 0.0,
-                "checkpointId": "ckpt-a",
-            },
-        )
-
-        assert response.status_code == 200
-        payload = response.get_json()
-        assert payload["prompt"] == "abc"
-        assert payload["completion"] == "aa"
-        assert payload["generatedTokens"] == 2
-        assert payload["checkpointId"] == "ckpt-a"
-
-    def test_generate_uses_the_best_checkpoint_by_default(
-        self, inference: InferenceContext
-    ) -> None:
-        makeCheckpoint(
-            inference.checkpoint.path.parent,
-            inference.checkpointRepo,
-            "ckpt-b",
-            step=1,
-            modelName="tiny-test",
-        )
-
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            json={"prompt": "abc", "maxTokens": 1, "temperature": 0.0},
-        )
-
-        assert response.status_code == 200
-        assert response.get_json()["checkpointId"] == "ckpt-a"
-
-    def test_generate_accepts_stop_sequences(self, inference: InferenceContext) -> None:
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            json={
-                "prompt": "abc",
-                "maxTokens": 2,
-                "temperature": 0.0,
-                "stopSequences": ["</s>"],
-            },
-        )
-
-        assert response.status_code == 200
-
-    @pytest.mark.parametrize(
-        "payload",
-        [
-            {"prompt": ""},
-            {"prompt": "abc", "maxTokens": 0},
-            {"prompt": "abc", "temperature": 5.1},
-            {"prompt": "abc", "topP": 0.0},
-            {"prompt": "abc", "repetitionPenalty": 0.0},
-            {"prompt": "abc", "stopSequences": [str(index) for index in range(17)]},
-        ],
-    )
-    def test_generate_rejects_invalid_payload(
-        self, inference: InferenceContext, payload: dict[str, Any]
-    ) -> None:
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            json=payload,
-        )
-
-        assert response.status_code == 400
-        assert errorCode(response) == "VALIDATION_ERROR"
-
-    def test_generate_unknown_checkpoint_returns_404(self, inference: InferenceContext) -> None:
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            json={"prompt": "abc", "maxTokens": 1, "checkpointId": "missing"},
-        )
-
-        assert response.status_code == 404
-        assert errorCode(response) == "CHECKPOINT_NOT_FOUND"
-
-    def test_generate_requires_json(self, inference: InferenceContext) -> None:
-        response = inference.client.post(
-            "/api/inference/generate",
-            headers=AUTH_HEADERS,
-            data="prompt=abc",
-        )
-
-        assert response.status_code == 400
-        assert errorCode(response) == "VALIDATION_ERROR"

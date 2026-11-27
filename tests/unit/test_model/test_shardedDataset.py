@@ -58,6 +58,19 @@ class TestShardedTokenDatasetWindows:
         torch.testing.assert_close(window["input_ids"], torch.arange(0, 4))
         torch.testing.assert_close(window["labels"], torch.arange(1, 5))
 
+    def test_token_outside_model_vocabulary_fails_before_device_transfer(
+        self, tmp_path: Path
+    ) -> None:
+        shard = writeTokenShard(
+            tmp_path / "shard.bin",
+            [[1, 2, 3, 4, 31999]],
+            vocabSize=32_000,
+        )
+        dataset = ShardedTokenDataset([shard], seqLen=4, vocabSize=512)
+
+        with pytest.raises(ValueError, match=r"Token ID 31999.*vocabulary size 512"):
+            next(iter(dataset))
+
     def test_document_of_exactly_seq_len_plus_one_yields_one_window(self, tmp_path: Path) -> None:
         shard = writeTokenShard(tmp_path / "shard.bin", [list(range(5))], vocabSize=16)
 

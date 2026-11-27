@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from ..models.corpusModel import ScrapeResult
 from ..repositories.corpusRepository import CorpusRepository
@@ -16,5 +15,5 @@ class BaseScraper(ABC):
     """Scrape one source and persist the produced raw documents."""
 
     @abstractmethod
-    def scrape(self, outputDir: Path, corpusRepo: CorpusRepository) -> ScrapeResult:
+    def scrape(self, corpusRepo: CorpusRepository) -> ScrapeResult:
         """Run the scraper and return a summary of the run."""

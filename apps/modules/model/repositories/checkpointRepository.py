@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -13,9 +14,11 @@ import torch
 from apps.modules.shared.kernel.exceptions import ResourceNotFoundError
 from apps.modules.shared.storage.sqliteStorage import SQLiteStorage
 
-from ..models.modelModel import Checkpoint
+from ..models.trainingModel import Checkpoint
 
 INDEX_FILE_NAME = "checkpoints_index.sqlite"
+TRAINING_LOG_FILE_NAME = "training_log.jsonl"
+logger = logging.getLogger(__name__)
 
 CHECKPOINT_SCHEMA = """
 CREATE TABLE IF NOT EXISTS checkpoints (
@@ -185,6 +188,41 @@ class CheckpointRepository:
                 (modelName,),
             )
         return int(row["total"]) if row is not None else 0
+
+    def readTrainingHistory(self, checkpointDir: Path, jobId: str) -> list[dict[str, Any]]:
+        """Read valid JSON object entries from a run's JSONL history."""
+        logFile = checkpointDir / TRAINING_LOG_FILE_NAME
+        if not logFile.is_file():
+            return []
+
+        history: list[dict[str, Any]] = []
+        try:
+            with logFile.open("r", encoding="utf-8") as handle:
+                for lineNumber, line in enumerate(handle, start=1):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        entry = json.loads(line)
+                    except json.JSONDecodeError:
+                        logger.warning(
+                            "Skipping malformed training log entry",
+                            extra={"jobId": jobId, "line": lineNumber},
+                        )
+                        continue
+                    if isinstance(entry, dict):
+                        history.append(entry)
+                    else:
+                        logger.warning(
+                            "Skipping non-object training log entry",
+                            extra={"jobId": jobId, "line": lineNumber},
+                        )
+        except OSError:
+            logger.exception(
+                "Unable to read training history",
+                extra={"jobId": jobId, "path": str(logFile)},
+            )
+        return history
 
     def pruneOld(
         self,

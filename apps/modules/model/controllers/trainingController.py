@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import json
+import time
 from typing import Any
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request, stream_with_context
 
 from apps.modules.corpus.repositories.corpusRepository import CorpusRepository
 from apps.modules.shared.config import settings
@@ -17,13 +19,11 @@ from apps.modules.shared.kernel.workerPool import WorkerPool
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 
 from ..ml.modelRunner import ModelRunner
-from ..models.modelModel import (
-    ModelConfig,
-    TrainingConfig,
-    TrainingResumeRequest,
-    TrainingStartRequest,
-)
+from ..models.generationModel import GenerateRequest
+from ..models.modelConfig import ModelConfig
+from ..models.trainingModel import TrainingConfig, TrainingResumeRequest, TrainingStartRequest
 from ..repositories.checkpointRepository import CheckpointRepository
+from ..services.gpuExecutionCoordinator import gpuExecutionCoordinator
 from ..services.trainingService import TrainingService
 
 DEFAULT_WORKER_COUNT = 1
@@ -81,6 +81,7 @@ class TrainingContainer:
                 corpusRepo=cls.getCorpusRepository(),
                 jobRepo=cls.getJobRepository(),
                 workerPool=cls.getWorkerPool(),
+                gpuCoordinator=gpuExecutionCoordinator,
                 defaultCheckpointDir=settings.checkpointDir,
             )
         return cls._service
@@ -191,6 +192,70 @@ def listPresets(user: Any) -> Any:
             for name, config in sorted(presets.items())
         ]
     )
+
+
+@trainingBlueprint.route("/jobs/<jobId>/stream", methods=["GET"])
+@requireAuth
+def streamTrainingJob(user: Any, jobId: str) -> Response:
+    """Stream training progress via Server-Sent Events."""
+    service = TrainingContainer.getService()
+    service.getJob(jobId, user.id)
+
+    def event_stream() -> Any:
+        last_progress = None
+        while True:
+            current_job = service.getJob(jobId, user.id)
+            progress = current_job.progress
+
+            if progress != last_progress:
+                yield f"data: {json.dumps(progress)}\n\n"
+                last_progress = progress
+
+            if current_job.status in {"completed", "failed", "cancelled"}:
+                yield f"data: {json.dumps({'final': True, 'status': current_job.status})}\n\n"
+                break
+
+            time.sleep(0.5)
+
+    return Response(
+        stream_with_context(event_stream()),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+@trainingBlueprint.route("/jobs/<jobId>/history", methods=["GET"])
+@requireAuth
+def getTrainingHistory(user: Any, jobId: str) -> Any:
+    """Return the training history from the log file."""
+    service = TrainingContainer.getService()
+    return jsonify({"history": service.getTrainingHistory(jobId, user.id)})
+
+
+@trainingBlueprint.route("/jobs/<jobId>/evaluate", methods=["POST"])
+@requireAuth
+@validateInput(GenerateRequest)
+def evaluateCheckpoint(validated: GenerateRequest, user: Any, jobId: str) -> Any:
+    """Generate sample responses from the latest checkpoint of a training job."""
+    from apps.modules.model.controllers.inferenceController import InferenceContainer
+
+    service = TrainingContainer.getService()
+    job_checkpoints = service.listJobCheckpoints(jobId, user.id)
+    if not job_checkpoints:
+        raise ValidationError("Aucun checkpoint trouve pour ce job")
+
+    # Use best checkpoint or latest
+    best_ckpt = next((c for c in job_checkpoints if c.isBest), job_checkpoints[0])
+
+    inference_service = InferenceContainer.getService()
+    options = validated.toOptions()
+    result = inference_service.generate(validated.prompt, options, best_ckpt.id)
+
+    return jsonify(result.toDict())
 
 
 def _intArg(

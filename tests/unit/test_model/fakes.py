@@ -24,6 +24,9 @@ class FakeTokenizer:
     """Character tokenizer with a small, deterministic id space."""
 
     tokenizerPath = FAKE_TOKENIZER_PATH
+    vocabSize = 64
+    eosTokenId = DEFAULT_EOS_TOKEN_ID
+    padTokenId = 1
 
     def __init__(self, encodeTo: int | None = None) -> None:
         # When `encodeTo` is set, every character maps to that single token id.

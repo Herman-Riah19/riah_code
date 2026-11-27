@@ -13,9 +13,10 @@ from apps.modules.shared.decorators.validation import validateInput
 from apps.modules.shared.kernel.exceptions import ValidationError
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 
-from ..models.modelModel import GenerateRequest
+from ..models.generationModel import GenerateRequest
 from ..repositories.checkpointRepository import CheckpointRepository
 from ..services.inferenceService import InferenceService
+from ..services.gpuExecutionCoordinator import gpuExecutionCoordinator
 
 DEFAULT_CACHE_CAPACITY = 2
 
@@ -47,6 +48,7 @@ class InferenceContainer:
             cls._service = InferenceService(
                 tokenizerRepo=cls.getTokenizerRepository(),
                 checkpointRepo=cls.getCheckpointRepository(),
+                gpuCoordinator=gpuExecutionCoordinator,
                 cacheCapacity=DEFAULT_CACHE_CAPACITY,
             )
         return cls._service

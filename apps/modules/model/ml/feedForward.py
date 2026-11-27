@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from ..models.modelModel import ModelConfig
+from ..models.modelConfig import ModelConfig
 
 
 class SwiGLU(nn.Module):

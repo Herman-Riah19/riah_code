@@ -42,16 +42,20 @@ class ShardedTokenDataset(IterableDataset[dict[str, torch.Tensor]]):
         seed: int = 42,
         epoch: int = 0,
         validate: bool = True,
+        vocabSize: int | None = None,
     ) -> None:
         if seqLen < 1:
             raise ValueError("seqLen must be >= 1")
         if seed < 0:
             raise ValueError("seed must be >= 0")
+        if vocabSize is not None and vocabSize < 1:
+            raise ValueError("vocabSize must be >= 1")
 
         self._seqLen = seqLen
         self._shuffle = shuffle
         self._seed = seed
         self._epoch = epoch
+        self._vocabSize = vocabSize
         self._shardPaths = [self._resolveShardPath(Path(path)) for path in shardPaths]
         self._indexes: dict[Path, list[ShardEntry]] = {}
         self._tokenCounts: dict[Path, int] = {}
@@ -130,6 +134,11 @@ class ShardedTokenDataset(IterableDataset[dict[str, torch.Tensor]]):
                         tokens[offset : offset + self._seqLen + 1],
                         dtype=np.int64,
                     )
+                    if self._vocabSize is not None and window.max() >= self._vocabSize:
+                        raise ValueError(
+                            f"Token ID {int(window.max())} in {shardPath} exceeds "
+                            f"model vocabulary size {self._vocabSize}"
+                        )
                     yield {
                         "input_ids": torch.from_numpy(window[:-1]),
                         "labels": torch.from_numpy(window[1:]),

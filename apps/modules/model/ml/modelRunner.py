@@ -10,7 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from ..models.modelModel import Checkpoint, GenerationOptions, ModelConfig
+from ..models.generationModel import GenerationOptions
+from ..models.modelConfig import ModelConfig
+from ..models.trainingModel import Checkpoint
 from .sampler import Sampler
 from .transformer import TransformerLM
 

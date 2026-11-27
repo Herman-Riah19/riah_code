@@ -6,7 +6,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from ..models.modelModel import ModelConfig
+from ..models.modelConfig import ModelConfig
 
 
 class RMSNorm(nn.Module):

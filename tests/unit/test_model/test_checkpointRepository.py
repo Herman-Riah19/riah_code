@@ -136,6 +136,28 @@ class TestCheckpointQueries:
         assert repository.count(modelName="alpha") == 1
 
 
+class TestTrainingHistory:
+    """Reading JSONL run history from the checkpoint storage layer."""
+
+    def test_reads_only_valid_object_entries(self, tmp_path: Path) -> None:
+        repository = CheckpointRepository(tmp_path / "index")
+        checkpointDir = tmp_path / "run"
+        checkpointDir.mkdir()
+        (checkpointDir / "training_log.jsonl").write_text(
+            '{"step":1}\nnot-json\n42\n{"step":2}\n',
+            encoding="utf-8",
+        )
+
+        history = repository.readTrainingHistory(checkpointDir, "job-1")
+
+        assert history == [{"step": 1}, {"step": 2}]
+
+    def test_missing_history_returns_empty_list(self, tmp_path: Path) -> None:
+        repository = CheckpointRepository(tmp_path / "index")
+
+        assert repository.readTrainingHistory(tmp_path / "missing", "job-1") == []
+
+
 class TestCheckpointDeletion:
     """Pruning and file cleanup."""
 

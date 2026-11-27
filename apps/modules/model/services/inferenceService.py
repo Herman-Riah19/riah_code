@@ -19,8 +19,11 @@ from apps.modules.tokenizer.models.tokenizerModel import BPETokenizer
 from apps.modules.tokenizer.repositories.tokenizerRepository import TokenizerRepository
 
 from ..ml.modelRunner import ModelRunner
-from ..models.modelModel import Checkpoint, GenerationOptions, ModelConfig
+from ..models.generationModel import GenerationOptions
+from ..models.modelConfig import ModelConfig
+from ..models.trainingModel import Checkpoint
 from ..repositories.checkpointRepository import CheckpointRepository
+from .gpuExecutionCoordinator import GPUExecutionCoordinator
 
 ModelFactory = Callable[[ModelConfig], ModelRunner]
 DEFAULT_CACHE_CAPACITY = 2
@@ -54,6 +57,7 @@ class InferenceService:
         self,
         tokenizerRepo: TokenizerRepository,
         checkpointRepo: CheckpointRepository,
+        gpuCoordinator: GPUExecutionCoordinator,
         modelFactory: ModelFactory | None = None,
         modelCache: LRUCache[str, ModelRunner] | None = None,
         device: torch.device | None = None,
@@ -61,6 +65,7 @@ class InferenceService:
     ) -> None:
         self._tokenizerRepo = tokenizerRepo
         self._checkpointRepo = checkpointRepo
+        self._gpuCoordinator = gpuCoordinator
         self._device = device
         self._modelFactory = modelFactory or self._defaultFactory
         self._cache = modelCache or LRUCache(capacity=cacheCapacity)
@@ -73,6 +78,11 @@ class InferenceService:
 
     def loadModel(self, checkpointId: str | None = None) -> ModelRunner:
         """Return a cached runner, loading and caching it on a miss."""
+        with self._gpuCoordinator.inference():
+            return self._loadModel(checkpointId)
+
+    def _loadModel(self, checkpointId: str | None = None) -> ModelRunner:
+        """Load a runner while the caller owns the GPU reservation."""
         if checkpointId is not None:
             cached = self._cache.get(checkpointId)
             if cached is not None:
@@ -136,18 +146,19 @@ class InferenceService:
         checkpointId: str | None = None,
     ) -> GenerationOutput:
         """Generate a completion and decode prompt + completion."""
-        tokenizer, runner, checkpoint = self._prepare(prompt, checkpointId)
-        promptIds = self._encodePrompt(tokenizer, prompt, runner.config.maxSeqLen)
-        inputIds = torch.tensor([promptIds], dtype=torch.long)
-        outputIds = runner.generate(inputIds, options)[0].tolist()
-        generatedIds = outputIds[len(promptIds) :]
-        return GenerationOutput(
-            prompt=prompt,
-            completion=tokenizer.decode(generatedIds),
-            text=tokenizer.decode(outputIds),
-            generatedTokens=len(generatedIds),
-            checkpointId=checkpoint.id,
-        )
+        with self._gpuCoordinator.inference():
+            tokenizer, runner, checkpoint = self._prepare(prompt, checkpointId)
+            promptIds = self._encodePrompt(tokenizer, prompt, runner.config.maxSeqLen)
+            inputIds = torch.tensor([promptIds], dtype=torch.long)
+            outputIds = runner.generate(inputIds, options)[0].tolist()
+            generatedIds = outputIds[len(promptIds) :]
+            return GenerationOutput(
+                prompt=prompt,
+                completion=tokenizer.decode(generatedIds),
+                text=tokenizer.decode(outputIds),
+                generatedTokens=len(generatedIds),
+                checkpointId=checkpoint.id,
+            )
 
     def streamGenerate(
         self,
@@ -156,13 +167,14 @@ class InferenceService:
         checkpointId: str | None = None,
     ) -> Iterator[str]:
         """Yield decoded text deltas as tokens are produced."""
-        tokenizer, runner, _ = self._prepare(prompt, checkpointId)
-        promptIds = self._encodePrompt(tokenizer, prompt, runner.config.maxSeqLen)
-        inputIds = torch.tensor([promptIds], dtype=torch.long)
-        for tokenId in runner.streamGenerate(inputIds, options):
-            delta = tokenizer.decode([tokenId])
-            if delta:
-                yield delta
+        with self._gpuCoordinator.inference():
+            tokenizer, runner, _ = self._prepare(prompt, checkpointId)
+            promptIds = self._encodePrompt(tokenizer, prompt, runner.config.maxSeqLen)
+            inputIds = torch.tensor([promptIds], dtype=torch.long)
+            for tokenId in runner.streamGenerate(inputIds, options):
+                delta = tokenizer.decode([tokenId])
+                if delta:
+                    yield delta
 
     # --------------------------------------------------------------- internals
 
@@ -176,7 +188,7 @@ class InferenceService:
             raise ValidationError("Le prompt ne peut pas etre vide")
         tokenizer = self._loadTokenizer()
         checkpoint = self.resolveCheckpoint(checkpointId)
-        runner = self.loadModel(checkpoint.id)
+        runner = self._loadModel(checkpoint.id)
         # The runner resolves stop sequences itself, so it needs the tokenizer.
         runner.setTokenizer(tokenizer)
         return tokenizer, runner, checkpoint

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from apps.modules.shared.kernel.exceptions import ResourceNotFoundError, ValidationError
 
-from ..models.modelModel import MODEL_PRESETS, ModelConfig
+from ..models.modelConfig import MODEL_PRESETS, ModelConfig
 
 CONFIG_DIR_NAME = "configs"
 _NAME_PATTERN = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
